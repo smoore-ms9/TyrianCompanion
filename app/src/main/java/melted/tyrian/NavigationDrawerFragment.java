@@ -1,10 +1,11 @@
-package melted.tyriancompanion;
+package melted.tyrian;
 
-import android.support.v7.app.ActionBarActivity;
 import android.app.Activity;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.content.SharedPreferences;
@@ -17,10 +18,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
+import android.widget.BaseExpandableListAdapter;
+import android.widget.ExpandableListView;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.HashMap;
 
 /**
  * Fragment used for managing interactions for and presentation of a navigation drawer.
@@ -51,12 +54,40 @@ public class NavigationDrawerFragment extends Fragment {
     private ActionBarDrawerToggle mDrawerToggle;
 
     private DrawerLayout mDrawerLayout;
-    private ListView mDrawerListView;
+    private ExpandableListView mDrawerListView;
     private View mFragmentContainerView;
 
     private int mCurrentSelectedPosition = 0;
     private boolean mFromSavedInstanceState;
     private boolean mUserLearnedDrawer;
+
+    private Toolbar toolbar;
+
+    protected static final String[] NAV_SECTIONS = {
+            "Account",
+            "Guild",
+            "WvW"
+    };
+
+    private static final String[] SUB_ACCOUNT = {
+            "Bank",
+            "Characters",
+            "Commerce"
+    };
+
+    private static final String[] SUB_GUILD = {
+            "Explorer"
+    };
+
+    private static final String[] SUB_WVW = {
+            "Matches"
+    };
+
+    protected static final HashMap<String, String[]> NAV_NODES = new HashMap<String, String[]>(){
+        {{  put(NAV_SECTIONS[0], SUB_ACCOUNT);
+            put(NAV_SECTIONS[1], SUB_GUILD);
+            put(NAV_SECTIONS[2], SUB_WVW); }};
+    };
 
     public NavigationDrawerFragment() {
     }
@@ -87,27 +118,94 @@ public class NavigationDrawerFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mDrawerListView = (ListView) inflater.inflate(
+        mDrawerListView = (ExpandableListView) inflater.inflate(
                 R.layout.fragment_navigation_drawer, container, false);
-        mDrawerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+        mDrawerListView.setAdapter(DrawerAdapter(inflater, NAV_NODES));
+        mDrawerListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                selectItem(position);
+            public boolean onChildClick(
+                    ExpandableListView parent, View v,
+                    int groupPosition, int childPosition, long id) {
+                selectItem((int) DrawerAdapter(inflater, NAV_NODES)
+                        .getChildId(groupPosition, childPosition));
+                return true;
             }
         });
-        mDrawerListView.setAdapter(new ArrayAdapter<String>(
-                getActionBar().getThemedContext(),
-                android.R.layout.simple_list_item_activated_1,
-                android.R.id.text1,
-                new String[]{
-                        getString(R.string.title_section1),
-                        getString(R.string.title_section2),
-                        getString(R.string.title_section3),
-                }));
-        mDrawerListView.setItemChecked(mCurrentSelectedPosition, true);
+
         return mDrawerListView;
+    }
+
+    private BaseExpandableListAdapter DrawerAdapter(final LayoutInflater inflater, final HashMap<String, String[]> lNodes) {
+        BaseExpandableListAdapter adapter = new BaseExpandableListAdapter() {
+
+            @Override
+            public int getGroupCount() {
+                return lNodes.size();
+            }
+
+            @Override
+            public int getChildrenCount(int groupPosition) {
+                return lNodes.get(NAV_SECTIONS[groupPosition]).length;
+            }
+
+            @Override
+            public String[] getGroup(int groupPosition) {
+                return NAV_NODES.get(NAV_SECTIONS[groupPosition]);
+            }
+
+            @Override
+            public String getChild(int groupPosition, int childPosition) {
+                return NAV_NODES.get(NAV_SECTIONS[groupPosition])[childPosition];
+            }
+
+            @Override
+            public long getGroupId(int groupPosition) {
+                return groupPosition;
+            }
+
+            @Override
+            public long getChildId(int groupPosition, int childPosition) {
+                return (groupPosition*100) + childPosition;
+            }
+
+            @Override
+            public boolean hasStableIds() {
+                return true;
+            }
+
+            @Override
+            public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
+                if (convertView == null)
+                    convertView = inflater.inflate(R.layout.fragment_section, null);
+
+                TextView sHeader = (TextView) convertView
+                        .findViewById(R.id.tv_header);
+                sHeader.setText(NAV_SECTIONS[groupPosition]);
+                return convertView;
+            }
+
+            @Override
+            public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+
+                if (convertView == null)
+                    convertView = inflater.inflate(R.layout.fragment_child, null);
+
+                TextView cHeader = (TextView) convertView
+                        .findViewById(R.id.tv_header);
+
+                cHeader.setText(getChild(groupPosition, childPosition));
+                return convertView;
+            }
+
+            @Override
+            public boolean isChildSelectable(int groupPosition, int childPosition) {
+                return true;
+            }
+        };
+        return adapter;
     }
 
     public boolean isDrawerOpen() {
@@ -137,7 +235,6 @@ public class NavigationDrawerFragment extends Fragment {
         mDrawerToggle = new ActionBarDrawerToggle(
                 getActivity(),                    /* host Activity */
                 mDrawerLayout,                    /* DrawerLayout object */
-                R.drawable.ic_drawer,             /* nav drawer image to replace 'Up' caret */
                 R.string.navigation_drawer_open,  /* "open drawer" description for accessibility */
                 R.string.navigation_drawer_close  /* "close drawer" description for accessibility */
         ) {
@@ -247,11 +344,6 @@ public class NavigationDrawerFragment extends Fragment {
             return true;
         }
 
-        if (item.getItemId() == R.id.action_example) {
-            Toast.makeText(getActivity(), "Example action.", Toast.LENGTH_SHORT).show();
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -262,7 +354,6 @@ public class NavigationDrawerFragment extends Fragment {
     private void showGlobalContextActionBar() {
         ActionBar actionBar = getActionBar();
         actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         actionBar.setTitle(R.string.app_name);
     }
 
