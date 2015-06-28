@@ -1,11 +1,16 @@
 package melted.tyrian;
 
 import android.app.Activity;
+import android.content.Context;
+import android.media.Image;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -13,6 +18,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
+import android.widget.BaseAdapter;
+import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 
 public class MainActivity extends ActionBarActivity
@@ -77,7 +86,6 @@ public class MainActivity extends ActionBarActivity
         actionBar.setTitle(mTitle);
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         if (!mNavigationDrawerFragment.isDrawerOpen()) {
@@ -114,7 +122,7 @@ public class MainActivity extends ActionBarActivity
          * The fragment argument representing the section number for this
          * fragment.
          */
-        private static final String ARG_SECTION_NUMBER = "section_number";
+        private static int ARG_SECTION_NUMBER = 0;
 
         /**
          * Returns a new instance of this fragment for the given section
@@ -123,7 +131,7 @@ public class MainActivity extends ActionBarActivity
         public static PlaceholderFragment newInstance(int sectionNumber) {
             PlaceholderFragment fragment = new PlaceholderFragment();
             Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+            ARG_SECTION_NUMBER = sectionNumber;
             fragment.setArguments(args);
             return fragment;
         }
@@ -134,16 +142,148 @@ public class MainActivity extends ActionBarActivity
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+            View rootView;
+            switch (ARG_SECTION_NUMBER) {
+                case 1:
+                    rootView = inflater.inflate(R.layout.fragment_bank, container, false);
+                    final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+                    layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+                    BankAdapter rAdapter = new BankAdapter();
+                    RecyclerView rView = ((RecyclerView) rootView.findViewById(R.id.rv_container));
+                    rView.setLayoutManager(layoutManager);
+                    rView.setAdapter(rAdapter);
+                    break;
+                case 2:
+                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
+                    break;
+                case 3:
+                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
+                    break;
+                case 101:
+                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
+                    break;
+                case 201:
+                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
+                    break;
+                default:
+                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
+                    break;
+            }
             return rootView;
         }
 
         @Override
         public void onAttach(Activity activity) {
             super.onAttach(activity);
-            ((MainActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
+            ((MainActivity) activity).onSectionAttached(ARG_SECTION_NUMBER);
+        }
+
+        //TODO: THIS WHOLE ADAPTER. Create a nested Gridview for bank tabs.
+        public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder> {
+            //TODO: Change this to an array of BankTab objects
+            //TODO: ...Create BankTab objects
+
+            // Provide a reference to the views for each data item
+            // Complex data items may need more than one view per item, and
+            // you provide access to all the views for a data item in a view holder
+            public class BankViewHolder extends RecyclerView.ViewHolder {
+                // each data item is just a string in this case
+                public TextView mTitle;
+                public GridView mGrid;
+
+                public BankViewHolder(CardView cv) {
+                    super(cv);
+                    mTitle = (TextView) cv.findViewById(R.id.tv_title);
+                    mGrid = (GridView) cv.findViewById(R.id.gv_grid);
+                    mGrid.setAdapter(new ImageAdapter(cv.getContext()));
+                }
+            }
+
+            // Provide a suitable constructor (depends on the kind of dataset)
+            public BankAdapter() {
+                //TODO: Get the bank info from API
+            }
+
+            // Create new views (invoked by the layout manager)
+            @Override
+            public BankAdapter.BankViewHolder onCreateViewHolder(ViewGroup parent,
+                                                                 int viewType) {
+                // create a new view
+                CardView card = (CardView) LayoutInflater.
+                        from(parent.getContext()).
+                        inflate(R.layout.card_banktab, parent, false);
+
+                // set the view's size, margins, paddings and layout parameters...
+                BankViewHolder vh = new BankViewHolder(card);
+                return vh;
+            }
+
+            // Replace the contents of a view (invoked by the layout manager)
+            @Override
+            public void onBindViewHolder(BankViewHolder holder, int position) {
+                // - get element from your dataset at this position
+                // - replace the contents of the view with that element
+                holder.mTitle.setText("Test Tab");
+            }
+
+            // Return the size of your dataset (invoked by the layout manager)
+            @Override
+            public int getItemCount() {
+                //TODO: Get the count
+                return 3;
+            }
+
+            public class ImageAdapter extends BaseAdapter {
+                private Context mContext;
+
+                public ImageAdapter(Context c) {
+                    mContext = c;
+                }
+
+                public int getCount() {
+                    return mThumbIds.length;
+                }
+
+                public Object getItem(int position) {
+                    return null;
+                }
+
+                public long getItemId(int position) {
+                    return 0;
+                }
+
+                // create a new ImageView for each item referenced by the Adapter
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    ImageView imageView;
+                    if (convertView == null) {
+                        // if it's not recycled, initialize some attributes
+                        imageView = new ImageView(mContext);
+                        imageView.setLayoutParams(new GridView.LayoutParams(96, 96));
+                        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                        imageView.setPadding(8, 8, 8, 8);
+                    } else {
+                        imageView = (ImageView) convertView;
+                    }
+
+                    imageView.setImageResource(mThumbIds[position]);
+                    return imageView;
+                }
+
+                // references to our images
+                private Integer[] mThumbIds = {
+                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
+                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
+                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
+                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
+                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
+                        R.drawable.ic_drawer, R.drawable.ic_drawer,
+                        R.drawable.ic_drawer, R.drawable.ic_drawer,
+                        R.drawable.ic_drawer, R.drawable.ic_drawer,
+                        R.drawable.ic_drawer, R.drawable.ic_drawer,
+                        R.drawable.ic_drawer, R.drawable.ic_drawer,
+                        R.drawable.ic_drawer, R.drawable.ic_drawer
+                };
+            }
         }
     }
-
 }
