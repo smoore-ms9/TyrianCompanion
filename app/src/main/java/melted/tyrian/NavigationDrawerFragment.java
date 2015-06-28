@@ -63,6 +63,14 @@ public class NavigationDrawerFragment extends Fragment {
 
     private Toolbar toolbar;
 
+//    protected static final HashMap<Integer, String> CHILD_IDS = new HashMap<Integer, String>() {
+//        {{  put(1, SUB_ACCOUNT[0]);
+//            put(2, SUB_ACCOUNT[1]);
+//            put(3, SUB_ACCOUNT[2]);
+//            put(101, SUB_GUILD[0]);
+//            put(201, SUB_WVW[0]);}};
+//    };
+
     protected static final String[] NAV_SECTIONS = {
             "Account",
             "Guild",
