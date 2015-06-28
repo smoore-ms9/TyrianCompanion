@@ -233,6 +233,7 @@ public class MainActivity extends ActionBarActivity
                 return 3;
             }
 
+            //TODO: Pass in images from api
             public class ImageAdapter extends BaseAdapter {
                 private Context mContext;
 
