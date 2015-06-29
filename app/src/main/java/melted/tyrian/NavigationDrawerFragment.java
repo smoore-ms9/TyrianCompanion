@@ -18,8 +18,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,6 +59,7 @@ public class NavigationDrawerFragment extends Fragment {
 
     private DrawerLayout mDrawerLayout;
     private ExpandableListView mDrawerListView;
+    private Spinner mDrawerSpinner;
     private View mFragmentContainerView;
 
     private int mCurrentSelectedPosition = 0;
@@ -62,6 +67,15 @@ public class NavigationDrawerFragment extends Fragment {
     private boolean mUserLearnedDrawer;
 
     private Toolbar toolbar;
+
+    protected static String key = " ";
+
+    private HashMap<String, String> spinner_keys = new HashMap<String, String>() {
+        {{
+            put("Test 2", "BCB28355-6F28-7148-9319-0D853893F917698A577D-F9AD-4C4F-B8ED-7B471A8AEF7F");
+            put("Test 1", "BCB28355-6F28-7148-9319-0D853893F917698A577D-F9AD-4C4F-B8ED-7B471A8AEF7F");
+        }};
+    };
 
 //    protected static final HashMap<Integer, String> CHILD_IDS = new HashMap<Integer, String>() {
 //        {{  put(1, SUB_ACCOUNT[0]);
@@ -77,18 +91,24 @@ public class NavigationDrawerFragment extends Fragment {
             "WvW"
     };
 
-    private static final String[] SUB_ACCOUNT = {
+    protected static final String[] SUB_ACCOUNT = {
             "Bank",
             "Characters",
             "Commerce"
     };
 
-    private static final String[] SUB_GUILD = {
+    protected static final String[] SUB_GUILD = {
             "Explorer"
     };
 
-    private static final String[] SUB_WVW = {
+    protected static final String[] SUB_WVW = {
             "Matches"
+    };
+
+    protected static final String[] SUB_BANK = {
+            "Personal",
+            "Materials",
+            "Currency"
     };
 
     protected static final HashMap<String, String[]> NAV_NODES = new HashMap<String, String[]>(){
@@ -96,6 +116,7 @@ public class NavigationDrawerFragment extends Fragment {
             put(NAV_SECTIONS[1], SUB_GUILD);
             put(NAV_SECTIONS[2], SUB_WVW); }};
     };
+    private String[] keys;
 
     public NavigationDrawerFragment() {
     }
@@ -128,8 +149,29 @@ public class NavigationDrawerFragment extends Fragment {
     @Override
     public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mDrawerListView = (ExpandableListView) inflater.inflate(
+        LinearLayout rView = (LinearLayout) inflater.inflate(
                 R.layout.fragment_navigation_drawer, container, false);
+
+        mDrawerSpinner = (Spinner) rView.findViewById(R.id.spin_key);
+        keys = new String[spinner_keys.size()];
+        spinner_keys.keySet().toArray(keys);
+        ArrayAdapter<String> sAdapter = new ArrayAdapter<>(
+                getActivity(),
+                R.layout.support_simple_spinner_dropdown_item,
+                keys);
+        mDrawerSpinner.setAdapter(sAdapter);
+        mDrawerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                key = spinner_keys.get(keys[position]);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+        mDrawerListView = (ExpandableListView) rView.findViewById(R.id.elv_drawer);
 
         mDrawerListView.setAdapter(DrawerAdapter(inflater, NAV_NODES));
         mDrawerListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
@@ -143,7 +185,7 @@ public class NavigationDrawerFragment extends Fragment {
             }
         });
 
-        return mDrawerListView;
+        return rView;
     }
 
     private BaseExpandableListAdapter DrawerAdapter(final LayoutInflater inflater, final HashMap<String, String[]> lNodes) {
@@ -234,15 +276,16 @@ public class NavigationDrawerFragment extends Fragment {
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
         // set up the drawer's list view with items and click listener
 
-        ActionBar actionBar = getActionBar();
-        actionBar.setDisplayHomeAsUpEnabled(true);
-        actionBar.setHomeButtonEnabled(true);
+        //ActionBar actionBar = getActionBar();
+        //actionBar.setDisplayHomeAsUpEnabled(true);
+        //actionBar.setHomeButtonEnabled(true);
 
         // ActionBarDrawerToggle ties together the the proper interactions
         // between the navigation drawer and the action bar app icon.
         mDrawerToggle = new ActionBarDrawerToggle(
                 getActivity(),                    /* host Activity */
                 mDrawerLayout,                    /* DrawerLayout object */
+                MainActivity.toolbar,
                 R.string.navigation_drawer_open,  /* "open drawer" description for accessibility */
                 R.string.navigation_drawer_close  /* "close drawer" description for accessibility */
         ) {
@@ -360,9 +403,9 @@ public class NavigationDrawerFragment extends Fragment {
      * 'context', rather than just what's in the current screen.
      */
     private void showGlobalContextActionBar() {
-        ActionBar actionBar = getActionBar();
-        actionBar.setDisplayShowTitleEnabled(true);
-        actionBar.setTitle(R.string.app_name);
+        //ActionBar actionBar = getActionBar();
+        //actionBar.setDisplayShowTitleEnabled(true);
+        //actionBar.setTitle(R.string.app_name);
     }
 
     private ActionBar getActionBar() {
