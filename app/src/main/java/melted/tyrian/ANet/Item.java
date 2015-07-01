@@ -29,10 +29,103 @@ import melted.tyrian.R;
 /**
  * Created by Stephen on 6/28/2015.
  */
-public class Item extends AsyncTask<Integer, Integer, Long> {
+public class Item {
 
-    private final WeakReference<ImageView> IV_REF;
-    private final MainActivity.ContentFragment.BankAdapter.ImageAdapter adapter;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    public String getRarity() {
+        return rarity;
+    }
+
+    public void setRarity(String rarity) {
+        this.rarity = rarity;
+    }
+
+    public double getVendor_value() {
+        return vendor_value;
+    }
+
+    public void setVendor_value(double vendor_value) {
+        this.vendor_value = vendor_value;
+    }
+
+    public String[] getGame_types() {
+        return game_types;
+    }
+
+    public void setGame_types(String[] game_types) {
+        this.game_types = game_types;
+    }
+
+    public String[] getFlags() {
+        return flags;
+    }
+
+    public void setFlags(String[] flags) {
+        this.flags = flags;
+    }
+
+    public String[] getRestrictions() {
+        return restrictions;
+    }
+
+    public void setRestrictions(String[] restrictions) {
+        this.restrictions = restrictions;
+    }
+
+    public int getID() {
+        return ID;
+    }
+
+    public void setID(int ID) {
+        this.ID = ID;
+    }
+
+    public Bitmap getIcon() {
+        return icon;
+    }
+
+    public void setIcon(Bitmap icon) {
+        this.icon = icon;
+    }
+
+    public String[] getDetails() {
+        return details;
+    }
+
+    public void setDetails(String[] details) {
+        this.details = details;
+    }
 
     private String name;
     private String description;
@@ -47,68 +140,9 @@ public class Item extends AsyncTask<Integer, Integer, Long> {
     private Bitmap icon;
     private String[] details;
 
-    public Item(int id, ImageView iv, MainActivity.ContentFragment.BankAdapter.ImageAdapter adapter)  {
+    public Item(int id)  {
         this.ID = id;
-        this.IV_REF = new WeakReference<ImageView>(iv);
-        this.adapter = adapter;
     }
 
-    private void FetchItem(int id) throws IOException {
-        HttpsURLConnection connection =
-                (HttpsURLConnection) new URL(APIHandles.BASE_API_ITEMS_URI
-                        + "?ids=" + id
-                        + "&lang=" + Locale.getDefault().getLanguage())
-                        .openConnection();
 
-        // fetch data from server
-        JsonReader reader = new JsonReader(
-                new InputStreamReader(connection.getInputStream()));
-        JsonParser parser = new JsonParser();
-        JsonElement jsonResponse = parser.parse(reader);
-
-        try {
-            JItem[] items = new Gson().fromJson(jsonResponse, JItem[].class);
-            JItem item = items[0];
-            this.name = item.name;
-            this.description = item.description;
-            this.type = item.type;
-            this.level = item.level;
-            this.rarity = item.rarity;
-            this.vendor_value = item.vendor_value;
-            //this.game_types = item.game_types;
-            //this.flags = item.flags;
-            //this.restrictions = item.restrictions;
-            Bitmap mIcon11 = null;
-            InputStream in = new URL(item.icon).openStream();
-            this.icon = BitmapFactory.decodeStream(in);
-            //this.details = item.details;
-        } catch (Exception e) {
-            String t = e.getMessage();
-        }
-    }
-
-    @Override
-    protected Long doInBackground(Integer... params) {
-        try {
-            FetchItem(ID);
-        } catch (IOException e) {
-            //TODO: Error handle
-            e.printStackTrace();
-        }
-        return (long) ID;
-    }
-
-    protected void onPostExecute(Long result) {
-        if (IV_REF != null) {
-            ImageView imageView = IV_REF.get();
-            if (imageView != null) {
-                if (icon != null) {
-                    imageView.setImageBitmap(icon);
-                } else {
-                    imageView.setImageResource(R.drawable.empty_slot);
-                }
-                adapter.notifyDataSetChanged();
-            }
-        }
-    }
 }

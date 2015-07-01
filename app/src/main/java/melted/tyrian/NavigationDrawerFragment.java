@@ -68,7 +68,7 @@ public class NavigationDrawerFragment extends Fragment {
 
     private Toolbar toolbar;
 
-    protected static String key = " ";
+    public static String key = " ";
 
     private HashMap<String, String> spinner_keys = new HashMap<String, String>() {
         {{
@@ -107,8 +107,7 @@ public class NavigationDrawerFragment extends Fragment {
 
     protected static final String[] SUB_BANK = {
             "Personal",
-            "Materials",
-            "Currency"
+            "Materials"
     };
 
     protected static final HashMap<String, String[]> NAV_NODES = new HashMap<String, String[]>(){
@@ -149,7 +148,7 @@ public class NavigationDrawerFragment extends Fragment {
     @Override
     public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        LinearLayout rView = (LinearLayout) inflater.inflate(
+        View rView = inflater.inflate(
                 R.layout.fragment_navigation_drawer, container, false);
 
         mDrawerSpinner = (Spinner) rView.findViewById(R.id.spin_key);

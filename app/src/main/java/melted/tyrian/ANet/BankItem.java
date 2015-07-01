@@ -4,25 +4,29 @@ import android.widget.ImageView;
 
 import com.google.gson.annotations.SerializedName;
 
+import melted.tyrian.MainActivity;
+
 /**
  * Created by Stephen on 6/28/2015.
  */
 public class BankItem {
 
-    @SerializedName("id")
     public int id;
 
-    @SerializedName("count")
     public int count;
 
-    //public Item item;
+    public Item item;
 
-    public BankItem(){
-        //this.item = null;
+    public int position;
+
+    public BankItem(int id, int count, int position){
+        this.id = id;
+        this.count = count;
+        this.position = position;
     }
 
-    //public void setItem(ImageView iv)
-    //{
-    //    this.item = new Item(id, iv);
-    //}
+    public void setItem(Item i)
+    {
+        this.item = i;
+    }
 }

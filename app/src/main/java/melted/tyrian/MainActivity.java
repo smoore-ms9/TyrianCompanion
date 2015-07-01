@@ -2,8 +2,10 @@ package melted.tyrian;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
-import android.support.annotation.DrawableRes;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -24,6 +26,7 @@ import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -34,14 +37,23 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Array;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import melted.tyrian.ANet.*;
+import melted.tyrian.Adapters.BankAdapter;
+import melted.tyrian.Adapters.MatsAdapter;
 
 
 public class MainActivity extends ActionBarActivity
@@ -61,10 +73,27 @@ public class MainActivity extends ActionBarActivity
     protected static Toolbar toolbar;
     private static Spinner spinner;
 
+
+    // Bank view fields
+    public static ArrayList<BankItem[]> bItems;
+    public static ArrayList<ImageView> bThumbnails;
+    public static boolean bCached;
+
+    // Mats view fields
+
+    public static boolean[] mCaches;
+
+    public static ArrayList<Integer> mIDs;
+    public static ArrayList<Mat>[] mCats;
+    public static List<HashMap<Integer, JMat>> jMatsById;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        InitMatFields();
+        InitBankFields();
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         if (toolbar != null) {
@@ -80,6 +109,23 @@ public class MainActivity extends ActionBarActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+    }
+
+    private void InitBankFields() {
+        bItems = new ArrayList<>();
+        bThumbnails = new ArrayList<>();
+    }
+
+    private void InitMatFields() {
+        mCaches = new boolean[7];
+        for (int i = 0; i < 7; i++) mCaches[i] = false;
+
+        mCats = new ArrayList[7];
+        for (int i = 0; i < 7; i++) mCats[i] = new ArrayList<>();
+
+        mIDs = new ArrayList<>();
+        jMatsById = new ArrayList<>();
+        for (int i = 0; i < 7; i++) jMatsById.add(new HashMap<Integer, JMat>());
     }
 
     @Override
@@ -140,10 +186,6 @@ public class MainActivity extends ActionBarActivity
         private static int ARG_SECTION_NUMBER = 0;
         private RecyclerView rView;
 
-        // Bank view fields
-        private ArrayList<BankItem> bItems;
-        private ArrayList<ImageView> bThumbnails;
-
         /**
          * Returns a new instance of this fragment for the given section
          * number.
@@ -164,7 +206,7 @@ public class MainActivity extends ActionBarActivity
                                  Bundle savedInstanceState) {
             View rootView;
             switch (ARG_SECTION_NUMBER) {
-                case 1:
+                case 1: //Bank tab selected
                     rootView = inflater.inflate(R.layout.fragment_bank, container, false);
                     final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
                     layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -190,10 +232,6 @@ public class MainActivity extends ActionBarActivity
                                     case 1:
                                         MatsAdapter mAdapter = new MatsAdapter();
                                         rView.setAdapter(mAdapter);
-                                        break;
-                                    case 2:
-                                        TPAdapter tpAdapter = new TPAdapter();
-                                        rView.setAdapter(tpAdapter);
                                         break;
                                 }
                             }
@@ -245,366 +283,6 @@ public class MainActivity extends ActionBarActivity
         public void onAttach(Activity activity) {
             super.onAttach(activity);
             ((MainActivity) activity).onSectionAttached(ARG_SECTION_NUMBER);
-        }
-
-        //TODO: THIS WHOLE ADAPTER. Create a nested Gridview for bank tabs.
-        public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder> {
-
-            private boolean loading = false;
-
-            // Provide a suitable constructor (depends on the kind of dataset)
-            public BankAdapter() {
-            }
-
-            private class PopulateBItems extends AsyncTask<Void, Void, ArrayList<BankItem>>
-            {
-
-                private final BankAdapter adapter;
-
-                public PopulateBItems(BankAdapter adapter) {
-                    this.adapter = adapter;
-                }
-                @Override
-                protected ArrayList<BankItem> doInBackground(Void... params) {
-                    loading = true;
-                    HttpsURLConnection connection;
-                    try {
-                        connection = (HttpsURLConnection) new URL(APIHandles.getAuthUri(
-                                APIHandles.BASE_API_BANK_URI, NavigationDrawerFragment.key))
-                                .openConnection();
-
-                        // fetch data from server
-                        JsonReader reader = new JsonReader(
-                                new InputStreamReader(connection.getInputStream()));
-                        JsonParser parser = new JsonParser();
-                        JsonElement jsonResponse = parser.parse(reader);
-                        bItems = new Gson().fromJson(jsonResponse,
-                                 new TypeToken<List<BankItem>>() {}.getType());
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    loading = false;
-                    return bItems;
-                }
-
-                protected void onPostExecute(Long result) {
-                    adapter.notifyDataSetChanged();
-                }
-            }
-
-            // Provide a reference to the views for each data item
-            // Complex data items may need more than one view per item, and
-            // you provide access to all the views for a data item in a view holder
-            public class BankViewHolder extends RecyclerView.ViewHolder {
-                // each data item is just a string in this case
-                public TextView mTitle;
-                public GridView mGrid;
-
-                public BankViewHolder(CardView cv) {
-                    super(cv);
-                    mTitle = (TextView) cv.findViewById(R.id.tv_title);
-                    mGrid = (GridView) cv.findViewById(R.id.gv_grid);
-                    mGrid.setAdapter(new ImageAdapter(cv.getContext()));
-                    mGrid.setOnTouchListener(new View.OnTouchListener() {
-                        @Override
-                        public boolean onTouch(View v, MotionEvent event) {
-                            v.getParent().requestDisallowInterceptTouchEvent(true);
-                            return false;
-                        }
-                    });
-                }
-            }
-
-            // Create new views (invoked by the layout manager)
-            @Override
-            public BankAdapter.BankViewHolder onCreateViewHolder(ViewGroup parent,
-                                                                 int viewType) {
-                // create a new view
-                CardView card = (CardView) LayoutInflater.
-                        from(parent.getContext()).
-                        inflate(R.layout.card_banktab, parent, false);
-
-                //TODO: Get the bank info from API
-                if (bItems == null & !loading)
-                    new PopulateBItems(this).execute();
-
-                // set the view's size, margins, paddings and layout parameters...
-                BankViewHolder vh = new BankViewHolder(card);
-                return vh;
-            }
-
-            // Replace the contents of a view (invoked by the layout manager)
-            @Override
-            public void onBindViewHolder(BankViewHolder holder, int position) {
-                // - get element from your dataset at this position
-                // - replace the contents of the view with that element
-                if (bItems == null) holder.mTitle.setText("Please Refresh");
-                else if (bItems.get(position) != null)
-                    holder.mTitle.setText(Integer.toString(bItems.size()) + " slots found:");
-            }
-
-            // Return the size of your dataset (invoked by the layout manager)
-            @Override
-            public int getItemCount() {
-                //TODO: Get the count
-                return 1;
-            }
-
-            //TODO: Pass in images from api
-            public class ImageAdapter extends BaseAdapter {
-                private Context mContext;
-
-                public ImageAdapter(Context c) {
-                    mContext = c;
-                }
-
-                public int getCount() {
-                    if (bItems == null) return 1;
-                    else return bItems.size();
-                }
-
-                public Object getItem(int position) {
-                    if (bItems == null) return "Test";
-                    else return bItems.get(position);
-                }
-
-                public long getItemId(int position) {
-                    return position;
-                }
-
-                // create a new ImageView for each item referenced by the Adapter
-                public View getView(int position, View convertView, ViewGroup parent) {
-                    ImageView imageView;
-                    if (bThumbnails == null)
-                        bThumbnails = new ArrayList<ImageView>();
-                    if (bThumbnails == null || bThumbnails.size() <= position) {
-                        if (convertView == null) {
-                            // if it's not recycled, initialize some attributes
-                            imageView = new ImageView(mContext);
-                            imageView.setLayoutParams(new GridView.LayoutParams(100, 100));
-                            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-                            imageView.setPadding(8, 8, 8, 8);
-                        } else {
-                            imageView = (ImageView) convertView;
-                        }
-
-                        if (bItems != null) {
-                            BankItem b = bItems.get(position);
-                            if (b != null) {
-                                Item i = new Item(b.id, imageView, this);
-                                i.execute();
-                            } else {
-                               imageView.setImageResource(R.drawable.empty_slot);
-                            }
-                            bThumbnails.add(imageView);
-                        }
-                        return imageView;
-                    } else {
-                        return bThumbnails.get(position);
-                    }
-                }
-            }
-        }
-
-        public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.HomeViewHolder> {
-
-            // Provide a reference to the views for each data item
-            // Complex data items may need more than one view per item, and
-            // you provide access to all the views for a data item in a view holder
-            public class HomeViewHolder extends RecyclerView.ViewHolder {
-                // each data item is just a string in this case
-                public TextView mTitle;
-                public GridView mGrid;
-
-                public HomeViewHolder(CardView cv) {
-                    super(cv);
-                    mTitle = (TextView) cv.findViewById(R.id.tv_title);
-                    mGrid = (GridView) cv.findViewById(R.id.gv_grid);
-                    mGrid.setAdapter(new ImageAdapter(cv.getContext()));
-                }
-            }
-
-            // Provide a suitable constructor (depends on the kind of dataset)
-            public MatsAdapter() {
-                //TODO: Get the bank info from API
-            }
-
-            // Create new views (invoked by the layout manager)
-            @Override
-            public MatsAdapter.HomeViewHolder onCreateViewHolder(ViewGroup parent,
-                                                                 int viewType) {
-                // create a new view
-                CardView card = (CardView) LayoutInflater.
-                        from(parent.getContext()).
-                        inflate(R.layout.card_banktab, parent, false);
-
-                // set the view's size, margins, paddings and layout parameters...
-                HomeViewHolder vh = new HomeViewHolder(card);
-                return vh;
-            }
-
-            // Replace the contents of a view (invoked by the layout manager)
-            @Override
-            public void onBindViewHolder(HomeViewHolder holder, int position) {
-                // - get element from your dataset at this position
-                // - replace the contents of the view with that element
-                holder.mTitle.setText("Test Tab");
-            }
-
-            // Return the size of your dataset (invoked by the layout manager)
-            @Override
-            public int getItemCount() {
-                //TODO: Get the count
-                return 1;
-            }
-
-            //TODO: Pass in images from api
-            public class ImageAdapter extends BaseAdapter {
-                private Context mContext;
-
-                public ImageAdapter(Context c) {
-                    mContext = c;
-                }
-
-                public int getCount() {
-                    return mThumbIds.length;
-                }
-
-                public Object getItem(int position) {
-                    return null;
-                }
-
-                public long getItemId(int position) {
-                    return 0;
-                }
-
-                // create a new ImageView for each item referenced by the Adapter
-                public View getView(int position, View convertView, ViewGroup parent) {
-                    ImageView imageView;
-                    if (convertView == null) {
-                        // if it's not recycled, initialize some attributes
-                        imageView = new ImageView(mContext);
-                        imageView.setLayoutParams(new GridView.LayoutParams(196, 196));
-                        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                        imageView.setPadding(8, 8, 8, 8);
-                    } else {
-                        imageView = (ImageView) convertView;
-                    }
-
-                    imageView.setImageResource(mThumbIds[position]);
-                    return imageView;
-                }
-
-                // references to our images
-                private Integer[] mThumbIds = {
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha
-                };
-            }
-        }
-
-        public class TPAdapter extends RecyclerView.Adapter<TPAdapter.HomeViewHolder> {
-
-            // Provide a reference to the views for each data item
-            // Complex data items may need more than one view per item, and
-            // you provide access to all the views for a data item in a view holder
-            public class HomeViewHolder extends RecyclerView.ViewHolder {
-                // each data item is just a string in this case
-                public TextView mTitle;
-                public GridView mGrid;
-
-                public HomeViewHolder(CardView cv) {
-                    super(cv);
-                    mTitle = (TextView) cv.findViewById(R.id.tv_title);
-                    mGrid = (GridView) cv.findViewById(R.id.gv_grid);
-                    mGrid.setAdapter(new ImageAdapter(cv.getContext()));
-                }
-            }
-
-            // Provide a suitable constructor (depends on the kind of dataset)
-            public TPAdapter() {
-                //TODO: Get the bank info from API
-            }
-
-            // Create new views (invoked by the layout manager)
-            @Override
-            public TPAdapter.HomeViewHolder onCreateViewHolder(ViewGroup parent,
-                                                                 int viewType) {
-                // create a new view
-                CardView card = (CardView) LayoutInflater.
-                        from(parent.getContext()).
-                        inflate(R.layout.card_banktab, parent, false);
-
-                // set the view's size, margins, paddings and layout parameters...
-                HomeViewHolder vh = new HomeViewHolder(card);
-                return vh;
-            }
-
-            // Replace the contents of a view (invoked by the layout manager)
-            @Override
-            public void onBindViewHolder(HomeViewHolder holder, int position) {
-                // - get element from your dataset at this position
-                // - replace the contents of the view with that element
-                holder.mTitle.setText("Test Tab");
-            }
-
-            // Return the size of your dataset (invoked by the layout manager)
-            @Override
-            public int getItemCount() {
-                //TODO: Get the count
-                return 1;
-            }
-
-            //TODO: Pass in images from api
-            public class ImageAdapter extends BaseAdapter {
-                private Context mContext;
-
-                public ImageAdapter(Context c) {
-                    mContext = c;
-                }
-
-                public int getCount() {
-                    return mThumbIds.length;
-                }
-
-                public Object getItem(int position) {
-                    return null;
-                }
-
-                public long getItemId(int position) {
-                    return 0;
-                }
-
-                // create a new ImageView for each item referenced by the Adapter
-                public View getView(int position, View convertView, ViewGroup parent) {
-                    ImageView imageView;
-                    if (convertView == null) {
-                        // if it's not recycled, initialize some attributes
-                        imageView = new ImageView(mContext);
-                        imageView.setLayoutParams(new GridView.LayoutParams(196, 196));
-                        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                        imageView.setPadding(8, 8, 8, 8);
-                    } else {
-                        imageView = (ImageView) convertView;
-                    }
-
-                    imageView.setImageResource(mThumbIds[position]);
-                    return imageView;
-                }
-
-                // references to our images
-                private Integer[] mThumbIds = {
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha, R.drawable.ic_drawer,
-                        R.drawable.abc_ic_menu_copy_mtrl_am_alpha
-                };
-            }
         }
     }
 }
