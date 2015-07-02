@@ -1,10 +1,4 @@
-package melted.tyrian.ANet;
-
-import android.widget.ImageView;
-
-import com.google.gson.annotations.SerializedName;
-
-import melted.tyrian.MainActivity;
+package melted.tyrian.Local;
 
 /**
  * Created by Stephen on 6/28/2015.

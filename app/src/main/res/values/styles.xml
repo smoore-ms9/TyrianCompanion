@@ -1,13 +1,30 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Base.V7.Theme.AppCompat.Light">
+    <style name="AppTheme" parent="Base.V7.Theme.AppCompat">
         <!-- Customize your theme here. -->
         <item name="windowActionModeOverlay">true</item>
         <!--If you are using revision 22.1 please use just windowNoTitle. Without android:-->
         <item name="windowNoTitle">true</item>
         <!--We will be using the toolbar so no need to show ActionBar-->
         <item name="windowActionBar">false</item>
+    </style>
+
+    <style name="ToolBarTitle">
+        <item name="android:textSize">@dimen/abc_text_size_title_material</item>
+        <item name="android:textColor">#fff5edc8</item>
+    </style>
+
+    <style name="Toolbar" parent="android:Widget">
+        <item name="titleTextAppearance">@style/ToolBarTitle</item>
+        <item name="android:textColor">?android:textColorPrimary</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.Widget.AppCompat.Toolbar.Subtitle</item>
+        <item name="android:minHeight">?attr/actionBarSize</item>
+        <item name="titleMargins">4dp</item>
+        <item name="maxButtonHeight">56dp</item>
+        <item name="collapseIcon">?attr/homeAsUpIndicator</item>
+        <item name="collapseContentDescription">@string/abc_toolbar_collapse_description</item>
+        <item name="contentInsetStart">16dp</item>
     </style>
 
     <style name="AppThemeM" parent="AppThemeM.Base">

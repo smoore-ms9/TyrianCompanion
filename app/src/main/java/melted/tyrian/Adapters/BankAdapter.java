@@ -33,8 +33,9 @@ import java.util.Locale;
 import javax.net.ssl.HttpsURLConnection;
 
 import melted.tyrian.ANet.APIHandles;
-import melted.tyrian.ANet.BankItem;
-import melted.tyrian.ANet.Item;
+import melted.tyrian.Helpers.KeyHelper;
+import melted.tyrian.Local.BankItem;
+import melted.tyrian.Local.Item;
 import melted.tyrian.ANet.JBankItem;
 import melted.tyrian.ANet.JItem;
 import melted.tyrian.MainActivity;
@@ -75,7 +76,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
             HttpsURLConnection connection;
             try {
                 connection = (HttpsURLConnection) new URL(APIHandles.getAuthUri(
-                        APIHandles.BASE_API_BANK_URI, NavigationDrawerFragment.key))
+                        APIHandles.BASE_API_BANK_URI, KeyHelper.key))
                         .openConnection();
 
                 // fetch data from server

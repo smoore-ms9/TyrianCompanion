@@ -1,4 +1,4 @@
-package melted.tyrian.ANet;
+package melted.tyrian.Local;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

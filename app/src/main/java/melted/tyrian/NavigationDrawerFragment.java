@@ -1,9 +1,14 @@
 package melted.tyrian;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.graphics.Color;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
@@ -18,16 +23,22 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
+
+import melted.tyrian.ANet.APIHandles;
+import melted.tyrian.ANet.JKey;
+import melted.tyrian.Helpers.KeyHelper;
 
 /**
  * Fragment used for managing interactions for and presentation of a navigation drawer.
@@ -59,7 +70,7 @@ public class NavigationDrawerFragment extends Fragment {
 
     private DrawerLayout mDrawerLayout;
     private ExpandableListView mDrawerListView;
-    private Spinner mDrawerSpinner;
+    public static Spinner mDrawerSpinner;
     private View mFragmentContainerView;
 
     private int mCurrentSelectedPosition = 0;
@@ -68,37 +79,27 @@ public class NavigationDrawerFragment extends Fragment {
 
     private Toolbar toolbar;
 
-    public static String key = " ";
-
-    private HashMap<String, String> spinner_keys = new HashMap<String, String>() {
-        {{
-            put("Test 2", "BCB28355-6F28-7148-9319-0D853893F917698A577D-F9AD-4C4F-B8ED-7B471A8AEF7F");
-            put("Test 1", "BCB28355-6F28-7148-9319-0D853893F917698A577D-F9AD-4C4F-B8ED-7B471A8AEF7F");
-        }};
-    };
-
-//    protected static final HashMap<Integer, String> CHILD_IDS = new HashMap<Integer, String>() {
-//        {{  put(1, SUB_ACCOUNT[0]);
-//            put(2, SUB_ACCOUNT[1]);
-//            put(3, SUB_ACCOUNT[2]);
-//            put(101, SUB_GUILD[0]);
-//            put(201, SUB_WVW[0]);}};
-//    };
-
     protected static final String[] NAV_SECTIONS = {
             "Account",
-            "Guild",
+            "PvE",
+            "PvP",
             "WvW"
     };
 
     protected static final String[] SUB_ACCOUNT = {
+            "Overview",
             "Bank",
             "Characters",
-            "Commerce"
+            "Commerce",
+            "Guilds"
     };
 
-    protected static final String[] SUB_GUILD = {
-            "Explorer"
+    protected static final String[] SUB_PVE = {
+            "Boss Timer"
+    };
+
+    protected static final String[] SUB_PVP = {
+            "Map Viewer"
     };
 
     protected static final String[] SUB_WVW = {
@@ -112,9 +113,11 @@ public class NavigationDrawerFragment extends Fragment {
 
     protected static final HashMap<String, String[]> NAV_NODES = new HashMap<String, String[]>(){
         {{  put(NAV_SECTIONS[0], SUB_ACCOUNT);
-            put(NAV_SECTIONS[1], SUB_GUILD);
-            put(NAV_SECTIONS[2], SUB_WVW); }};
+            put(NAV_SECTIONS[1], SUB_PVE);
+            put(NAV_SECTIONS[2], SUB_PVP);
+            put(NAV_SECTIONS[3], SUB_WVW); }};
     };
+
     private String[] keys;
 
     public NavigationDrawerFragment() {
@@ -152,24 +155,7 @@ public class NavigationDrawerFragment extends Fragment {
                 R.layout.fragment_navigation_drawer, container, false);
 
         mDrawerSpinner = (Spinner) rView.findViewById(R.id.spin_key);
-        keys = new String[spinner_keys.size()];
-        spinner_keys.keySet().toArray(keys);
-        ArrayAdapter<String> sAdapter = new ArrayAdapter<>(
-                getActivity(),
-                R.layout.support_simple_spinner_dropdown_item,
-                keys);
-        mDrawerSpinner.setAdapter(sAdapter);
-        mDrawerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                key = spinner_keys.get(keys[position]);
-            }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
         mDrawerListView = (ExpandableListView) rView.findViewById(R.id.elv_drawer);
 
         mDrawerListView.setAdapter(DrawerAdapter(inflater, NAV_NODES));
@@ -233,6 +219,17 @@ public class NavigationDrawerFragment extends Fragment {
                 TextView sHeader = (TextView) convertView
                         .findViewById(R.id.tv_header);
                 sHeader.setText(NAV_SECTIONS[groupPosition]);
+                sHeader.setTextColor(Color.parseColor("#fff5edc8"));
+
+                //ImageView iv_left = (ImageView) convertView.findViewById(R.id.iv_left);
+                ImageView iv_right = (ImageView) convertView.findViewById(R.id.iv_right);
+
+                if (isExpanded) {
+                    iv_right.setImageResource(R.drawable.ic_expand_less_white_24dp);
+                } else {
+                    iv_right.setImageResource(R.drawable.ic_expand_more_white_24dp);
+                }
+
                 return convertView;
             }
 
@@ -246,6 +243,7 @@ public class NavigationDrawerFragment extends Fragment {
                         .findViewById(R.id.tv_header);
 
                 cHeader.setText(getChild(groupPosition, childPosition));
+                //cHeader.setTextColor(Color.parseColor("#fff5edc8"));
                 return convertView;
             }
 
@@ -268,16 +266,53 @@ public class NavigationDrawerFragment extends Fragment {
      * @param drawerLayout The DrawerLayout containing this fragment's UI.
      */
     public void setUp(int fragmentId, DrawerLayout drawerLayout) {
+        if (KeyHelper.key_map == null) {
+            KeyHelper.key_map = new HashMap<>();
+            mDrawerSpinner.setVisibility(View.INVISIBLE);
+        } else mDrawerSpinner.setVisibility(View.VISIBLE);
+
+        keys = new String[KeyHelper.key_map.size()];
+        KeyHelper.key_map.keySet().toArray(keys);
+        final String[] spinner_items = new String[keys.length + 1];
+        for (int i = 0; i < spinner_items.length; i++) {
+            if (i < keys.length) spinner_items[i] = keys[i];
+            else spinner_items[i] = " + Store a new key";
+        }
+        ArrayAdapter<String> sAdapter = new ArrayAdapter<>(
+                getActivity(),
+                R.layout.spinner_dropdown,
+                spinner_items);
+        mDrawerSpinner.setAdapter(sAdapter);
+        mDrawerSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position == keys.length) {
+                    MainActivity.mShowGuide = true;
+                    MainActivity.ClearCache();
+                } else {
+                    MainActivity.mShowGuide = false;
+                    KeyHelper.key = KeyHelper.key_map.get(keys[position]);
+                    MainActivity.ClearCache();
+                }
+                mDrawerLayout.closeDrawer(mFragmentContainerView);
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                fragmentManager.beginTransaction()
+                        .replace(R.id.container, ContentFragment.newInstance(0))
+                        .commit();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
         mFragmentContainerView = getActivity().findViewById(fragmentId);
         mDrawerLayout = drawerLayout;
 
         // set a custom shadow that overlays the main content when the drawer opens
         mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
         // set up the drawer's list view with items and click listener
-
-        //ActionBar actionBar = getActionBar();
-        //actionBar.setDisplayHomeAsUpEnabled(true);
-        //actionBar.setHomeButtonEnabled(true);
 
         // ActionBarDrawerToggle ties together the the proper interactions
         // between the navigation drawer and the action bar app icon.
@@ -294,13 +329,17 @@ public class NavigationDrawerFragment extends Fragment {
                 if (!isAdded()) {
                     return;
                 }
-
                 getActivity().supportInvalidateOptionsMenu(); // calls onPrepareOptionsMenu()
             }
 
             @Override
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
+                if (MainActivity.mShowGuide && KeyHelper.key_map.size() > 0)
+                    mDrawerSpinner.setSelection(0, true);
+                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(
+                        Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(drawerView.getWindowToken(), 0);
                 if (!isAdded()) {
                     return;
                 }
@@ -321,7 +360,7 @@ public class NavigationDrawerFragment extends Fragment {
         // If the user hasn't 'learned' about the drawer, open it to introduce them to the drawer,
         // per the navigation drawer design guidelines.
         if (!mUserLearnedDrawer && !mFromSavedInstanceState) {
-            mDrawerLayout.openDrawer(mFragmentContainerView);
+            //mDrawerLayout.openDrawer(mFragmentContainerView);
         }
 
         // Defer code dependent on restoration of previous instance state.

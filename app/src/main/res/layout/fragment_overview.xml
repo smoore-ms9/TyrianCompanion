@@ -1,0 +1,93 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity$ContentFragment">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Loading..."
+        android:id="@+id/tv_account_name"
+        android:textColor="#fff5edc8"
+        android:layout_below="@+id/lbl_name"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Loading..."
+        android:id="@+id/tv_account_id"
+        android:layout_below="@+id/lbl_id"
+        android:layout_centerHorizontal="true"
+        android:textColor="#fff5edc8"
+        android:textSize="12dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Loading..."
+        android:id="@+id/tv_server"
+        android:layout_below="@+id/lbl_server"
+        android:layout_centerHorizontal="true"
+        android:textColor="#fff5edc8" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Loading..."
+        android:id="@+id/tv_creation_date"
+        android:layout_below="@+id/lbl_creation"
+        android:layout_centerHorizontal="true"
+        android:textColor="#fff5edc8" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Account Name"
+        android:id="@+id/lbl_name"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Account ID"
+        android:id="@+id/lbl_id"
+        android:layout_below="@+id/tv_account_name"
+        android:layout_centerHorizontal="true"
+        android:paddingTop="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Server"
+        android:id="@+id/lbl_server"
+        android:layout_below="@+id/tv_account_id"
+        android:layout_centerHorizontal="true"
+        android:paddingTop="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Creation Date"
+        android:id="@+id/lbl_creation"
+        android:layout_below="@+id/tv_server"
+        android:layout_centerHorizontal="true"
+        android:paddingTop="16dp" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete Key"
+        android:id="@+id/btn_delete"
+        android:layout_below="@+id/tv_creation_date"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp" />
+</RelativeLayout>

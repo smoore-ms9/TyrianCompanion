@@ -1,32 +1,27 @@
 package melted.tyrian;
 
 import android.app.Activity;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
-import android.widget.GridView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -36,24 +31,29 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.net.URL;
+import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import melted.tyrian.ANet.*;
 import melted.tyrian.Adapters.BankAdapter;
 import melted.tyrian.Adapters.MatsAdapter;
+import melted.tyrian.Helpers.KeyHelper;
+import melted.tyrian.Local.Account;
+import melted.tyrian.Local.BankItem;
+import melted.tyrian.Local.Guild;
+import melted.tyrian.Local.Mat;
+import melted.tyrian.Local.World;
 
 
 public class MainActivity extends ActionBarActivity
@@ -64,15 +64,14 @@ public class MainActivity extends ActionBarActivity
      * First change
      * Second Change
      */
-    private NavigationDrawerFragment mNavigationDrawerFragment;
+    public static NavigationDrawerFragment mNavigationDrawerFragment;
 
-    /**
-     * Used to store the last screen title. For use in {@link #restoreActionBar()}.
-     */
     private static CharSequence mTitle;
     protected static Toolbar toolbar;
-    private static Spinner spinner;
+    protected static Spinner spinner;
 
+    // Account field
+    protected static Account mAcc;
 
     // Bank view fields
     public static ArrayList<BankItem[]> bItems;
@@ -80,12 +79,15 @@ public class MainActivity extends ActionBarActivity
     public static boolean bCached;
 
     // Mats view fields
-
     public static boolean[] mCaches;
-
     public static ArrayList<Integer> mIDs;
     public static ArrayList<Mat>[] mCats;
     public static List<HashMap<Integer, JMat>> jMatsById;
+
+    //Init fields
+    public static boolean mShowGuide;
+    public static ArrayList<JKey> jKeys;
+    public static DrawerLayout mDrawer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +96,12 @@ public class MainActivity extends ActionBarActivity
 
         InitMatFields();
         InitBankFields();
+        try {
+            InitKeys();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         if (toolbar != null) {
@@ -102,21 +110,48 @@ public class MainActivity extends ActionBarActivity
             spinner = (Spinner) toolbar.findViewById(R.id.tool_spinner);
         }
 
+        mDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
-                R.id.navigation_drawer,
-                (DrawerLayout) findViewById(R.id.drawer_layout));
+                R.id.navigation_drawer, mDrawer);
     }
 
-    private void InitBankFields() {
+    private void InitKeys() throws IOException {
+        try {
+            FileInputStream fis = openFileInput(APIHandles.KEY_FILENAME);
+            JsonReader reader = new JsonReader(
+                    new InputStreamReader(fis));
+            JsonParser parser = new JsonParser();
+            JsonElement jsonResponse = parser.parse(reader);
+            jKeys = new Gson().fromJson(jsonResponse,
+                    new TypeToken<List<JKey>>() {
+                    }.getType());
+            fis.close();
+
+            if (jKeys != null && jKeys.size() > 0) {
+                this.mShowGuide = false;
+                KeyHelper.key_map = new HashMap<>();
+                for (JKey jk : jKeys)
+                    KeyHelper.key_map.put(jk.name, jk.key);
+                KeyHelper.key = jKeys.get(0).key;
+            }
+            else this.mShowGuide = true;
+
+
+        } catch (Exception e) {
+            this.mShowGuide = true;
+        }
+    }
+
+    private static void InitBankFields() {
         bItems = new ArrayList<>();
         bThumbnails = new ArrayList<>();
     }
 
-    private void InitMatFields() {
+    private static void InitMatFields() {
         mCaches = new boolean[7];
         for (int i = 0; i < 7; i++) mCaches[i] = false;
 
@@ -128,23 +163,23 @@ public class MainActivity extends ActionBarActivity
         for (int i = 0; i < 7; i++) jMatsById.add(new HashMap<Integer, JMat>());
     }
 
+    public static void ClearCache() {
+        mAcc = null;
+        InitBankFields();
+        InitMatFields();
+    }
+
     @Override
     public void onNavigationDrawerItemSelected(int position) {
         // update the main content by replacing fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
-                .replace(R.id.container, ContentFragment.newInstance(position + 1))
+                .replace(R.id.container, ContentFragment.newInstance(position))
                 .commit();
     }
 
     public void onSectionAttached(int number) {
         //TODO: Anything?
-    }
-
-    public void restoreActionBar() {
-        //ActionBar actionBar = getSupportActionBar();
-        //actionBar.setDisplayShowTitleEnabled(true);
-        //actionBar.setTitle(mTitle);
     }
 
     @Override
@@ -173,116 +208,5 @@ public class MainActivity extends ActionBarActivity
        // }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class ContentFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static int ARG_SECTION_NUMBER = 0;
-        private RecyclerView rView;
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static ContentFragment newInstance(int sectionNumber) {
-            ContentFragment fragment = new ContentFragment();
-            Bundle args = new Bundle();
-            ARG_SECTION_NUMBER = sectionNumber;
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        public ContentFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView;
-            switch (ARG_SECTION_NUMBER) {
-                case 1: //Bank tab selected
-                    rootView = inflater.inflate(R.layout.fragment_bank, container, false);
-                    final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-                    layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-
-                    rView = ((RecyclerView) rootView.findViewById(R.id.rv_container));
-                    rView.setLayoutManager(layoutManager);
-
-                    if (toolbar != null) {
-                        ArrayAdapter<String> sAdapter = new ArrayAdapter<String>(
-                                getActivity(),
-                                R.layout.support_simple_spinner_dropdown_item,
-                                NavigationDrawerFragment.SUB_BANK);
-                        spinner.setAdapter(sAdapter);
-                        spinner.setVisibility(View.VISIBLE);
-                        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                            @Override
-                            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                switch(position) {
-                                    case 0:
-                                        BankAdapter rAdapter = new BankAdapter();
-                                        rView.setAdapter(rAdapter);
-                                        break;
-                                    case 1:
-                                        MatsAdapter mAdapter = new MatsAdapter();
-                                        rView.setAdapter(mAdapter);
-                                        break;
-                                }
-                            }
-
-                            @Override
-                            public void onNothingSelected(AdapterView<?> parent) {
-
-                            }
-                        });
-                    }
-
-                    break;
-                case 2:
-                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
-                    spinner.setVisibility(View.INVISIBLE);
-                    break;
-                case 3:
-                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
-                    spinner.setVisibility(View.INVISIBLE);
-                    break;
-                case 101:
-                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
-                    spinner.setVisibility(View.INVISIBLE);
-                    break;
-                case 201:
-                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
-                    spinner.setVisibility(View.INVISIBLE);
-                    break;
-                default:
-                    rootView = inflater.inflate(R.layout.fragment_main, container, false);
-                    spinner.setVisibility(View.INVISIBLE);
-                    break;
-            }
-            UpdateTitle(ARG_SECTION_NUMBER);
-            return rootView;
-        }
-
-        private void UpdateTitle(int iChild) {
-            if (iChild == 0 || NavigationDrawerFragment.NAV_NODES == null) mTitle = "Tyrian Companion";
-            else {
-                int cIndex = (iChild % 100) - 1;
-                String sIndex = NavigationDrawerFragment.NAV_SECTIONS[(int) Math.floor(iChild / 100)];
-                mTitle = NavigationDrawerFragment.NAV_NODES.get(sIndex)[cIndex];
-            }
-            toolbar.setTitle(mTitle);
-        }
-
-        @Override
-        public void onAttach(Activity activity) {
-            super.onAttach(activity);
-            ((MainActivity) activity).onSectionAttached(ARG_SECTION_NUMBER);
-        }
     }
 }

@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.Toolbar
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:minHeight="?attr/actionBarSize"
-    android:background="@color/bright_foreground_disabled_material_dark"
+    android:background="@drawable/ui_highlight"
     theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
     popupTheme="@style/ThemeOverlay.AppCompat.Light"
     android:id="@+id/toolbar"
-    android:elevation="@dimen/navigation_elevation">
+    android:elevation="@dimen/navigation_elevation"
+    style="@style/Toolbar">
 
     <Spinner
         android:id="@+id/tool_spinner"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:spinnerMode="dropdown"
+        style="@style/Base.Widget.AppCompat.Spinner"/>
 
 </android.support.v7.widget.Toolbar>

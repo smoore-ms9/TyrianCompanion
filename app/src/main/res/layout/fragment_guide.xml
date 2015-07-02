@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Please enter an API key below to begin. This can be found at:"
+        android:id="@+id/textView2"
+        android:layout_gravity="center_horizontal"
+        android:textColor="#fff5edc8"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="0dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="0dp"
+        android:paddingBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stub"
+        android:id="@+id/tv_link"
+        android:layout_below="@+id/textView2"
+        android:layout_centerHorizontal="true"
+        android:paddingBottom="16dp"
+        android:gravity="center_vertical"
+        android:textColor="#fff5edc8" />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:layout_below="@+id/tv_link"
+        android:gravity="center_vertical|center_horizontal">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:id="@+id/btn_save"
+            android:layout_below="@+id/et_key_name"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:textColor="#fff5edc8"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/et_key"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginBottom="16dp"
+            android:singleLine="true"
+            style="@style/Base.V7.Widget.AppCompat.EditText" />
+
+        <EditText
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/et_key_name"
+            android:layout_below="@+id/et_key"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:singleLine="true"
+            style="@style/Base.V7.Widget.AppCompat.EditText" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="API Key:"
+            android:id="@+id/lbl_key"
+            android:layout_above="@+id/et_key_name"
+            android:layout_toLeftOf="@+id/et_key"
+            android:layout_toStartOf="@+id/et_key"
+            android:layout_alignTop="@+id/et_key"
+            android:gravity="center_vertical"
+            android:paddingRight="16dp"
+            android:textColor="#fff5edc8" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Key Label:"
+            android:id="@+id/lbl_lbl"
+            android:layout_alignBottom="@+id/et_key_name"
+            android:layout_toLeftOf="@+id/et_key_name"
+            android:layout_toStartOf="@+id/et_key_name"
+            android:layout_alignTop="@+id/et_key_name"
+            android:gravity="center_vertical"
+            android:paddingRight="16dp"
+            android:textColor="#fff5edc8" />
+    </RelativeLayout>
+
+</RelativeLayout>

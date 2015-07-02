@@ -1,8 +1,4 @@
-package melted.tyrian.ANet;
-
-import android.widget.ImageView;
-
-import melted.tyrian.MainActivity;
+package melted.tyrian.Local;
 
 /**
  * Created by Stephen on 6/28/2015.

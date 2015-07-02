@@ -11,11 +11,10 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
-        android:padding="16dp"
         android:background="@drawable/ui_bg">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="New Text"
             android:id="@+id/tv_title"
@@ -25,7 +24,8 @@
             android:paddingBottom="5dp"
             android:textColor="#fff5edc8"
             android:gravity="center_vertical"
-            android:paddingLeft="4dp" />
+            android:padding="16dp"
+            android:background="@drawable/ui_highlight" />
 
         <GridView
             android:layout_width="wrap_content"

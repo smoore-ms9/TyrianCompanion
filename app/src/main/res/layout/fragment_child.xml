@@ -8,8 +8,8 @@
         android:layout_height="48dp"
         android:text="New Text"
         android:id="@+id/tv_header"
-        android:paddingLeft="56dp"
-        android:fontFamily="sans-serif-medium"
-        android:textSize="20sp"
+        android:paddingLeft="32dp"
+        android:textSize="14sp"
+        android:fontFeatureSettings="sans-serif-medium"
         android:gravity="center_vertical" />
 </LinearLayout>

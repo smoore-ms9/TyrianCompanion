@@ -34,10 +34,11 @@ import java.util.Locale;
 import javax.net.ssl.HttpsURLConnection;
 
 import melted.tyrian.ANet.APIHandles;
-import melted.tyrian.ANet.Item;
+import melted.tyrian.Helpers.KeyHelper;
+import melted.tyrian.Local.Item;
 import melted.tyrian.ANet.JItem;
 import melted.tyrian.ANet.JMat;
-import melted.tyrian.ANet.Mat;
+import melted.tyrian.Local.Mat;
 import melted.tyrian.MainActivity;
 import melted.tyrian.NavigationDrawerFragment;
 import melted.tyrian.R;
@@ -130,7 +131,8 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
 
-        if (MainActivity.mCats[position].size() == 0) holder.mTitle.setText("Loading...");
+        if (MainActivity.mCats[position].size() == 0 || !MainActivity.mCaches[position])
+            holder.mTitle.setText("Loading...");
         else holder.mTitle.setText(MAT_CATS[position]);
         if ((MainActivity.mCats[position].size() == 0 && !mLoadingFlags[position]) ||
                 (MainActivity.mCats[position].size() > 0 && !MainActivity.mCaches[position])) {
@@ -169,7 +171,7 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
                     preLoading = true;
                     MainActivity.mIDs = new ArrayList<>();
                     connection = (HttpsURLConnection) new URL(APIHandles.getAuthUri(
-                            APIHandles.BASE_API_MATS_URI, NavigationDrawerFragment.key))
+                            APIHandles.BASE_API_MATS_URI, KeyHelper.key))
                             .openConnection();
 
                     reader = new JsonReader(
@@ -212,7 +214,8 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
                 parser = new JsonParser();
                 jsonResponse = parser.parse(reader);
                 JItem[] items = new Gson().fromJson(jsonResponse, JItem[].class);
-                if (MainActivity.mCats[mCardNum].size()  == 0)
+                int offset = 0;
+                if (MainActivity.mCats[mCardNum].size()  == 0 || !MainActivity.mCaches[mCardNum])
                     for (JItem ji : items) {
                         try {
                             if (ji != null) {
@@ -237,13 +240,16 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
                             }
                         } catch (Exception e) {
                             String t = e.getMessage();
+                            offset++;
                         }
                     }
-                if (MainActivity.mCats[mCardNum].size()  > 0)
+                if (MainActivity.mCats[mCardNum].size() == (items.length - offset))
                     MainActivity.mCaches[mCardNum] = true;
             } catch (IOException e) {
+                MainActivity.mCats[mCardNum] = new ArrayList<>();
                 e.printStackTrace();
             } catch (InterruptedException e) {
+                MainActivity.mCats[mCardNum] = new ArrayList<>();
                 e.printStackTrace();
             }
             return null;
@@ -265,11 +271,13 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
         }
 
         public int getCount() {
-            return MainActivity.mCats[_cardNum].size();
+            if (!MainActivity.mCaches[_cardNum]) return 0;
+            else return MainActivity.mCats[_cardNum].size();
         }
 
         public Object getItem(int position) {
-            return MainActivity.mCats[_cardNum].get(position);
+            if (!MainActivity.mCaches[_cardNum]) return null;
+            else return MainActivity.mCats[_cardNum].get(position);
         }
 
         public long getItemId(int position) {
