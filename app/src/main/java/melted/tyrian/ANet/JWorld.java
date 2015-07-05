@@ -13,5 +13,6 @@ public class JWorld {
     @SerializedName("name")
     public String name;
 
-    public JWorld() {}
+    public JWorld() {
+    }
 }

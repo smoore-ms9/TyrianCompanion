@@ -3,9 +3,9 @@ package melted.tyrian.ANet;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * Created by Stephen on 6/28/2015.
+ * Created by Stephen on 7/3/2015.
  */
-public class JMat {
+public class JInventory {
 
     @SerializedName("id")
     public int id;
@@ -13,9 +13,5 @@ public class JMat {
     @SerializedName("count")
     public int count;
 
-    @SerializedName("category")
-    public int category;
-
-    public JMat() {
-    }
+    public JInventory() {}
 }

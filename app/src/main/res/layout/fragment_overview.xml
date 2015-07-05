@@ -89,5 +89,6 @@
         android:id="@+id/btn_delete"
         android:layout_below="@+id/tv_creation_date"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:textColor="#fff5edc8" />
 </RelativeLayout>

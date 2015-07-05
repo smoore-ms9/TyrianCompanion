@@ -21,6 +21,8 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
+import org.w3c.dom.Text;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,14 +35,14 @@ import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import melted.tyrian.ANet.APIHandles;
-import melted.tyrian.Helpers.KeyHelper;
-import melted.tyrian.Local.Item;
+import melted.tyrian.ANet.APIHandler;
 import melted.tyrian.ANet.JItem;
 import melted.tyrian.ANet.JMat;
+import melted.tyrian.Async.GetMats;
+import melted.tyrian.Helpers.KeyHelper;
+import melted.tyrian.Local.Item;
 import melted.tyrian.Local.Mat;
 import melted.tyrian.MainActivity;
-import melted.tyrian.NavigationDrawerFragment;
 import melted.tyrian.R;
 
 /**
@@ -49,23 +51,21 @@ import melted.tyrian.R;
 
 public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder> {
 
-    private int cardNum;
-
-    private static boolean[] mLoadingFlags;
-
-    private final HashMap<Integer, Integer> CAT_NUMS =
-            new HashMap<Integer, Integer>(){
-                {{
-                    put(5,  0);
-                    put(6,  1);
-                    put(29, 2);
-                    put(30, 3);
-                    put(37, 4);
-                    put(38, 5);
-                    put(46, 6);
-                }}
+    public static boolean[] mLoadingFlags;
+    public static final HashMap<Integer, Integer> CAT_NUMS =
+            new HashMap<Integer, Integer>() {
+                {
+                    {
+                        put(5, 0);
+                        put(6, 1);
+                        put(29, 2);
+                        put(30, 3);
+                        put(37, 4);
+                        put(38, 5);
+                        put(46, 6);
+                    }
+                }
             };
-
     private final String[] MAT_CATS = {
             "Cooking Materials",
             "Common Crafting Materials",
@@ -74,39 +74,14 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
             "Rare Crafting Materials",
             "Festive Crafting Materials",
             "Ascended Crafting Materials"};
-
-    private boolean preLoading;
+    private int cardNum;
+    public static boolean preLoading;
 
     // Provide a suitable constructor (depends on the kind of dataset)
     public MatsAdapter() {
         this.cardNum = 0;
         this.mLoadingFlags = new boolean[7];
         this.preLoading = false;
-    }
-
-    // Provide a reference to the views for each data item
-    // Complex data items may need more than one view per item, and
-    // you provide access to all the views for a data item in a view holder
-    public class MatsViewHolder extends RecyclerView.ViewHolder {
-        // each data item is just a string in this case
-        public TextView mTitle;
-        public GridView mGrid;
-        public Context mContext;
-
-        public MatsViewHolder(CardView cv, int _cardNum) {
-            super(cv);
-            mContext = cv.getContext();
-            mTitle = (TextView) cv.findViewById(R.id.tv_title);
-            mGrid = (GridView) cv.findViewById(R.id.gv_grid);
-            mGrid.setAdapter(new MatsItemAdapter(cv.getContext(), _cardNum));
-            mGrid.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    v.getParent().requestDisallowInterceptTouchEvent(true);
-                    return false;
-                }
-            });
-        }
     }
 
     // Create new views (invoked by the layout manager)
@@ -132,15 +107,16 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
         // - replace the contents of the view with that element
 
         if (MainActivity.mCats[position].size() == 0 || !MainActivity.mCaches[position])
-            holder.mTitle.setText("Loading...");
+            holder.mTitle.setText(MAT_CATS[position] + " (Loading...)");
         else holder.mTitle.setText(MAT_CATS[position]);
+        MatsItemAdapter mAdapter = new MatsItemAdapter(holder.mContext, position, holder.mTitle, holder.mGrid);
+        holder.mGrid.setAdapter(mAdapter);
         if ((MainActivity.mCats[position].size() == 0 && !mLoadingFlags[position]) ||
                 (MainActivity.mCats[position].size() > 0 && !MainActivity.mCaches[position])) {
             MainActivity.mCats[position] = new ArrayList<>();
-            new PopulateMItems(this, position).execute();
+            new GetMats(mAdapter, position).execute();
         }
         //((MatsItemAdapter)holder.mGrid.getAdapter()).notifyDataSetChanged();
-        holder.mGrid.setAdapter(new MatsItemAdapter(holder.mContext, position));
     }
 
     // Return the size of your dataset (invoked by the layout manager)
@@ -149,130 +125,48 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
         return 7;
     }
 
-    private class PopulateMItems extends AsyncTask<Void, Void, Void>
-    {
-        private final MatsAdapter mAdapter;
-        private final int mCardNum;
+    // Provide a reference to the views for each data item
+    // Complex data items may need more than one view per item, and
+    // you provide access to all the views for a data item in a view holder
+    public class MatsViewHolder extends RecyclerView.ViewHolder {
+        // each data item is just a string in this case
+        public TextView mTitle;
+        public GridView mGrid;
+        public Context mContext;
 
-        public PopulateMItems(MatsAdapter adapter, int cardNum) {
-            this.mAdapter = adapter;
-            this.mCardNum = cardNum;
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            mLoadingFlags[mCardNum] = true;
-            HttpsURLConnection connection;
-            JsonReader reader;
-            JsonParser parser;
-            JsonElement jsonResponse;
-            try {
-                if (MainActivity.mIDs.size() == 0 && !preLoading) {
-                    preLoading = true;
-                    MainActivity.mIDs = new ArrayList<>();
-                    connection = (HttpsURLConnection) new URL(APIHandles.getAuthUri(
-                            APIHandles.BASE_API_MATS_URI, KeyHelper.key))
-                            .openConnection();
-
-                    reader = new JsonReader(
-                            new InputStreamReader(connection.getInputStream()));
-                    parser = new JsonParser();
-                    jsonResponse = parser.parse(reader);
-
-                    ArrayList<JMat> jMats = new Gson().fromJson(jsonResponse,
-                            new TypeToken<List<JMat>>() {
-                            }.getType());
-
-                    for (JMat _j : jMats) {
-                        if (_j != null) {
-                            MainActivity.mIDs.add(_j.id);
-                            MainActivity.jMatsById.get(CAT_NUMS.get(_j.category)).put(_j.id, _j);
-                        }
-                    }
-                    preLoading = false;
-                }
-
-                while(preLoading) { Thread.sleep(10); }
-
-                String queryIDs = "";
-                for (int id : MainActivity.jMatsById.get(mCardNum).keySet()) {
-                    if (queryIDs.equals(""))
-                        queryIDs = Integer.toString(id);
-                    else
-                        queryIDs += "," + Integer.toString(id);
-                }
-
-                connection =
-                        (HttpsURLConnection) new URL(APIHandles.BASE_API_ITEMS_URI
-                                + "?ids=" + queryIDs
-                                + "&lang=" + Locale.getDefault().getLanguage())
-                                .openConnection();
-
-                // fetch data from server
-                reader = new JsonReader(
-                        new InputStreamReader(connection.getInputStream()));
-                parser = new JsonParser();
-                jsonResponse = parser.parse(reader);
-                JItem[] items = new Gson().fromJson(jsonResponse, JItem[].class);
-                int offset = 0;
-                if (MainActivity.mCats[mCardNum].size()  == 0 || !MainActivity.mCaches[mCardNum])
-                    for (JItem ji : items) {
-                        try {
-                            if (ji != null) {
-                                JMat jm = MainActivity.jMatsById.get(mCardNum).get(ji.ID);
-                                InputStream in = new URL(ji.icon).openStream();
-                                Item _item = new Item(ji.ID);
-                                _item.setName(ji.name);
-                                _item.setDescription(ji.description);
-                                _item.setType(ji.type);
-                                _item.setLevel(ji.level);
-                                _item.setRarity(ji.rarity);
-                                _item.setVendor_value(ji.vendor_value);
-                                _item.setIcon(BitmapFactory.decodeStream(in));
-                                //_item.game_types = item.game_types;
-                                //_item.flags = item.flags;
-                                //_item.restrictions = item.restrictions;
-                                //_item.details = item.details;
-                                Mat _m = new Mat(jm.id, jm.count, jm.category,
-                                        MainActivity.mIDs.indexOf(jm.id));
-                                _m.setItem(_item);
-                                MainActivity.mCats[mCardNum].add(_m);
-                            }
-                        } catch (Exception e) {
-                            String t = e.getMessage();
-                            offset++;
-                        }
-                    }
-                if (MainActivity.mCats[mCardNum].size() == (items.length - offset))
-                    MainActivity.mCaches[mCardNum] = true;
-            } catch (IOException e) {
-                MainActivity.mCats[mCardNum] = new ArrayList<>();
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                MainActivity.mCats[mCardNum] = new ArrayList<>();
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        protected void onPostExecute(Void v) {
-            mLoadingFlags[mCardNum] = false;
-            mAdapter.notifyDataSetChanged();
+        public MatsViewHolder(CardView cv, int _cardNum) {
+            super(cv);
+            mContext = cv.getContext();
+            mTitle = (TextView) cv.findViewById(R.id.tv_title);
+            mGrid = (GridView) cv.findViewById(R.id.gv_grid);
+            mGrid.setAdapter(new MatsItemAdapter(cv.getContext(), _cardNum, mTitle, mGrid));
         }
     }
 
     public class MatsItemAdapter extends BaseAdapter {
         private final int _cardNum;
+        private final GridView mHost;
+        private TextView mTitle;
         private final Context mContext;
 
-        public MatsItemAdapter(Context c, int _cardNum) {
+        public MatsItemAdapter(Context c, int _cardNum, TextView mTitle, GridView host) {
             this.mContext = c;
             this._cardNum = _cardNum;
+            this.mTitle = mTitle;
+            this.mHost = host;
         }
 
         public int getCount() {
-            if (!MainActivity.mCaches[_cardNum]) return 0;
-            else return MainActivity.mCats[_cardNum].size();
+            if (!MainActivity.mCaches[_cardNum]) {
+                //mHost.setMinimumHeight(50);
+                return 0;
+            }
+            else {
+                ViewGroup.LayoutParams layoutParams = mHost.getLayoutParams();
+                layoutParams.height = 120 * ((int)Math.ceil(MainActivity.mCats[_cardNum].size() / 10.0)); //this is in pixels
+                mHost.setLayoutParams(layoutParams);
+                return MainActivity.mCats[_cardNum].size();
+            }
         }
 
         public Object getItem(int position) {
@@ -302,7 +196,7 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
 
             ImageView imageView = (ImageView) _view.findViewById(R.id.iv_item);
             imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-            imageView.setPadding(8, 8, 8, 8);
+            imageView.setPadding(5, 5, 5, 5);
             imageView.setImageResource(R.drawable.empty_slot);
 
             TextView tView = (TextView) _view.findViewById(R.id.tv_label);
@@ -311,10 +205,17 @@ public class MatsAdapter extends RecyclerView.Adapter<MatsAdapter.MatsViewHolder
             mItems = MainActivity.mCats[_cardNum];
 
             if (mItems.size() > 0 && mItems.size() > position && !mLoadingFlags[_cardNum]) {
+                mTitle.setText(MAT_CATS[_cardNum]);
                 Collections.sort(mItems);
                 if (mItems.get(position) != null && mItems.get(position).getItem() != null) {
                     imageView.setImageBitmap(mItems.get(position).getItem().getIcon());
-                    tView.setText(Integer.toString(mItems.get(position).getCount()));
+                    if (mItems.get(position).getCount() > 0) {
+                        tView.setText(Integer.toString(mItems.get(position).getCount()));
+                        imageView.setImageAlpha(255);
+                    } else {
+                        tView.setText("");
+                        imageView.setImageAlpha(50);
+                    }
                 }
             }
             return _view;

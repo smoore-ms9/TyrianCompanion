@@ -1,35 +1,29 @@
 package melted.tyrian.Local;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.widget.ImageView;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.JsonReader;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.ref.WeakReference;
-import java.net.URL;
-import java.util.Collections;
-import java.util.Locale;
-
-import javax.net.ssl.HttpsURLConnection;
-
-import melted.tyrian.MainActivity;
-import melted.tyrian.R;
 
 /**
  * Created by Stephen on 6/28/2015.
  */
 public class Item {
+
+    private String name;
+    private String description;
+    private String type;
+    private int level;
+    private String rarity;
+    private double vendor_value;
+    private String[] game_types;
+    private String[] flags;
+    private String[] restrictions;
+    private int ID;
+    private Bitmap icon;
+    private String[] details;
+    private int count;
+
+    public Item(int id) {
+        this.ID = id;
+    }
 
     public String getName() {
         return name;
@@ -127,22 +121,11 @@ public class Item {
         this.details = details;
     }
 
-    private String name;
-    private String description;
-    private String type;
-    private int level;
-    private String rarity;
-    private double vendor_value;
-    private String[] game_types;
-    private String[] flags;
-    private String[] restrictions;
-    private int ID;
-    private Bitmap icon;
-    private String[] details;
-
-    public Item(int id)  {
-        this.ID = id;
+    public int getCount() {
+        return count;
     }
 
-
+    public void setCount(int count) {
+        this.count = count;
+    }
 }

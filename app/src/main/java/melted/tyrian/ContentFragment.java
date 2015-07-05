@@ -3,12 +3,10 @@ package melted.tyrian;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,41 +15,27 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.MarginLayoutParams;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.stream.JsonReader;
-
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.sql.Date;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.net.ssl.HttpsURLConnection;
-
-import melted.tyrian.ANet.APIHandles;
-import melted.tyrian.ANet.JAccount;
 import melted.tyrian.ANet.JKey;
-import melted.tyrian.ANet.JWorld;
+import melted.tyrian.Adapters.BagAdapter;
 import melted.tyrian.Adapters.BankAdapter;
+import melted.tyrian.Adapters.CharacterListAdapter;
 import melted.tyrian.Adapters.MatsAdapter;
+import melted.tyrian.Async.GetAccountInfo;
+import melted.tyrian.Async.GetCharacters;
 import melted.tyrian.Helpers.KeyHelper;
-import melted.tyrian.Local.Account;
-import melted.tyrian.Local.Guild;
-import melted.tyrian.Local.World;
+import melted.tyrian.Listeners.OnSwipeTouchListener;
+import melted.tyrian.Local.Bag;
 
 /**
  * Created by Stephen on 7/2/2015.
@@ -78,76 +62,253 @@ public class ContentFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        switch (ARG_SECTION_NUMBER) {
+        if (MainActivity.mShowGuide) {
+            final View rootView = inflater.inflate(R.layout.fragment_guide, container, false);
+            TextView link = (TextView) rootView.findViewById(R.id.tv_link);
+            link.setText(Html.fromHtml(
+                    "<a href=\"https://account.guildwars2.com/account/api-keys\">" +
+                            "https://account.guildwars2.com/account/api-keys</a> "));
+            link.setMovementMethod(LinkMovementMethod.getInstance());
+            final EditText et_key = (EditText) rootView.findViewById(R.id.et_key);
+            final EditText et_key_name = (EditText) rootView.findViewById(R.id.et_key_name);
+            final Button btn_save = (Button) rootView.findViewById(R.id.btn_save);
+            btn_save.setEnabled(true);
+
+            btn_save.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    btn_save.setEnabled(false);
+                    String key = et_key.getText().toString();
+                    String key_name = et_key_name.getText().toString();
+
+                    JKey jKey = new JKey(key, key_name);
+
+                    KeyHelper kHelper = new KeyHelper(getActivity());
+                    kHelper.SaveKey(jKey);
+
+                    InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(
+                            Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(rootView.getWindowToken(), 0);
+
+                    KeyHelper.key_map.put(key_name, key);
+                    MainActivity.mNavigationDrawerFragment = (NavigationDrawerFragment)
+                            getActivity().getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
+                    MainActivity.mNavigationDrawerFragment.setUp(
+                            R.id.navigation_drawer, MainActivity.mDrawer);
+
+                    MainActivity.mShowGuide = false;
+
+                    FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                    fragmentManager.beginTransaction()
+                            .replace(R.id.container, ContentFragment.newInstance(0))
+                            .commit();
+                }
+            });
+            return rootView;
+
+        } else switch (ARG_SECTION_NUMBER) {
             case 0: //Overview tab selected
                 MainActivity.toolbar.setTitle("Overview");
                 return GetOverView(inflater, container);
             case 1: //Bank tab selected
-                MainActivity.toolbar.setTitle("Bank");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Bank");
                 return GetBankView(inflater, container);
             case 2:
-                MainActivity.toolbar.setTitle("Characters");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Characters");
                 return GetCharacterView(inflater, container);
             case 3:
-                MainActivity.toolbar.setTitle("Commerce");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Commerce");
                 return GetCommerceView(inflater, container);
             case 4:
-                MainActivity.toolbar.setTitle("Guilds");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Guilds");
                 return GetGuildView(inflater, container);
             case 100:
-                MainActivity.toolbar.setTitle("Boss Timer");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Boss Timer");
                 return GetTimerView(inflater, container);
             case 200:
-                MainActivity.toolbar.setTitle("Map Viewer");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Map Viewer");
                 return GetMapView(inflater, container);
             case 300:
-                MainActivity.toolbar.setTitle("Matches");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Matches");
                 return GetMatchView(inflater, container);
+            case 999:
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("Characters");
+                return GetCharacterDetailView(inflater, container);
             default:
-                MainActivity.toolbar.setTitle("I am Error");
+                ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText("I am Error");
                 return GetOverView(inflater, container);
         }
     }
 
+    private View GetCharacterDetailView(final LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.VISIBLE);
+        ((TextView)MainActivity.toolbar.findViewById(R.id.tool_title)).setText(MainActivity.mSelCharacter.getName());
+        View rootView = inflater.inflate(R.layout.fragment_character_details, container, false);
+
+        final LinearLayout tab_container = (LinearLayout) rootView.findViewById(R.id.ll_tab_content);
+
+        final int[] mCurrentTab = {0};
+        MainActivity.mTabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                mCurrentTab[0] = tab.getPosition();
+                switch (tab.getPosition()) {
+                    case 0:
+                        tab_container.removeAllViews();
+                        tab_container.addView(inflater.inflate(R.layout.tab_c_details, null));
+                        ((TextView) tab_container.findViewById(R.id.tv_c_name))
+                                .setText(MainActivity.mSelCharacter.getName());
+                        ((TextView) tab_container.findViewById(R.id.tv_lvl))
+                                .setText(Integer.toString(MainActivity.mSelCharacter.getLevel()));
+                        ((TextView) tab_container.findViewById(R.id.tv_race))
+                                .setText(MainActivity.mSelCharacter.getRace());
+                        ((TextView) tab_container.findViewById(R.id.tv_gender))
+                                .setText(MainActivity.mSelCharacter.getGender());
+                        ((TextView) tab_container.findViewById(R.id.tv_prof))
+                                .setText(MainActivity.mSelCharacter.getProfession());
+                        ((TextView) tab_container.findViewById(R.id.tv_deaths))
+                                .setText(Integer.toString(MainActivity.mSelCharacter.getDeaths()));
+
+                        int age_sec = MainActivity.mSelCharacter.getAge();
+                        int d = age_sec / 86400;
+                        int h = (age_sec - (d * 86400)) / 3600;
+                        int m = (age_sec - (d * 86400) - (h * 3600)) / 60;
+                        int s = age_sec - (d * 86400) - (h * 3600) - (m * 60);
+                        ((TextView) tab_container.findViewById(R.id.tv_c_age))
+                                .setText(Integer.toString(d) + " Days, " +
+                                        Integer.toString(h) + " Hrs, " +
+                                        Integer.toString(m) + " Mins, " +
+                                        Integer.toString(s) + " Secs");
+
+                        String created = MainActivity.mSelCharacter.getCreated();
+                        ((TextView) tab_container.findViewById(R.id.tv_created))
+                                .setText(created.substring(0, created.indexOf("T")));
+                        break;
+                    case 1:
+                        tab_container.removeAllViews();
+                        tab_container.addView(inflater.inflate(R.layout.tab_c_equipment, null));
+                        break;
+                    case 2:
+                        tab_container.removeAllViews();
+                        tab_container.addView(inflater.inflate(R.layout.tab_c_inventory, null));
+
+                        LinearLayout ll = (LinearLayout) tab_container.findViewById(R.id.ll_inventory);
+                        int i = 0;
+                        for (Bag b : MainActivity.mSelCharacter.getBags()) {
+                            View _v = inflater.inflate(R.layout.grid_bag, null);
+
+                            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                            layoutParams.setMargins(0, 0, 0, 32);
+
+                            TextView tv = (TextView) _v.findViewById(R.id.tv_title);
+
+                            GridView gv = (GridView) _v.findViewById(R.id.gv_grid);
+                            gv.setAdapter(new BagAdapter(i, tv));
+                            ll.addView(_v, layoutParams);
+                            i++;
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+
+        TabLayout.Tab t1 = MainActivity.mTabLayout.newTab().setText("Details");
+        TabLayout.Tab t2 = MainActivity.mTabLayout.newTab().setText("Equipment");
+        TabLayout.Tab t3 = MainActivity.mTabLayout.newTab().setText("Inventory");
+        MainActivity.mTabLayout.addTab(t1);
+        MainActivity.mTabLayout.addTab(t2);
+        MainActivity.mTabLayout.addTab(t3);
+
+        rootView.setOnTouchListener(new OnSwipeTouchListener(getActivity()) {
+            @Override
+            public void onSwipeRight() {
+                if (mCurrentTab[0] > 0)
+                    MainActivity.mTabLayout.getTabAt(mCurrentTab[0] - 1).select();
+            }
+
+            @Override
+            public void onSwipeLeft() {
+                if (mCurrentTab[0] < MainActivity.mTabLayout.getTabCount() - 1)
+                    MainActivity.mTabLayout.getTabAt(mCurrentTab[0] + 1).select();
+            }
+        });
+        return rootView;
+    }
+
     private View GetMatchView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
         View rootView = inflater.inflate(R.layout.fragment_coming_soon, container, false);
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
         return rootView;
     }
 
     private View GetMapView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
         View rootView = inflater.inflate(R.layout.fragment_coming_soon, container, false);
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
         return rootView;
     }
 
     private View GetTimerView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
         View rootView = inflater.inflate(R.layout.fragment_coming_soon, container, false);
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
         return rootView;
     }
 
     private View GetGuildView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
         View rootView = inflater.inflate(R.layout.fragment_coming_soon, container, false);
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
         return rootView;
     }
 
     private View GetCommerceView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
         View rootView = inflater.inflate(R.layout.fragment_coming_soon, container, false);
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
         return rootView;
     }
 
     private View GetCharacterView(LayoutInflater inflater, ViewGroup container) {
-        View rootView = inflater.inflate(R.layout.fragment_coming_soon, container, false);
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
+        View rootView = inflater.inflate(R.layout.fragment_characters, container, false);
+
+        final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+
+        RecyclerView rv_characters = (RecyclerView) rootView.findViewById(R.id.rv_container);
+        rv_characters.setLayoutManager(layoutManager);
+
+        CharacterListAdapter cla = new CharacterListAdapter(getActivity());
+        rv_characters.setAdapter(cla);
+
+        if (MainActivity.mCharacters.size() == 0)
+            new GetCharacters(cla).execute();
+
         return rootView;
     }
 
     private View GetOverView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.GONE);
         final View rootView;
-        MainActivity.spinner.setVisibility(View.INVISIBLE);
         if (MainActivity.mShowGuide) {
             rootView = inflater.inflate(R.layout.fragment_guide, container, false);
             TextView link = (TextView) rootView.findViewById(R.id.tv_link);
@@ -193,7 +354,6 @@ public class ContentFragment extends Fragment {
 
         } else {
             rootView = inflater.inflate(R.layout.fragment_overview, container, false);
-            MainActivity.spinner.setVisibility(View.INVISIBLE);
 
             Button btn_delete = (Button) rootView.findViewById(R.id.btn_delete);
             btn_delete.setOnClickListener(new View.OnClickListener() {
@@ -203,8 +363,8 @@ public class ContentFragment extends Fragment {
 
                     JKey keyToDelete = null;
                     for (JKey jk : MainActivity.jKeys) {
-                        if (jk.key.equals(key));
-                            keyToDelete = jk;
+                        if (jk.key.equals(key)) ;
+                        keyToDelete = jk;
                     }
 
                     if (keyToDelete != null) {
@@ -261,132 +421,65 @@ public class ContentFragment extends Fragment {
         return rootView;
     }
 
-    private class GetAccountInfo extends AsyncTask<Void, Void, Void> {
-
-        private final TextView tv_id;
-        private final TextView tv_name;
-        private final TextView tv_server;
-        private final TextView tv_created;
-
-        public GetAccountInfo(TextView[] field_views) {
-            this.tv_id = field_views[0];
-            this.tv_name = field_views[1];
-            this.tv_server = field_views[2];
-            this.tv_created = field_views[3];
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            try {
-                // Get Account Info
-                HttpsURLConnection connection;
-                connection = (HttpsURLConnection) new URL(APIHandles.getAuthUri(
-                        APIHandles.BASE_API_ACC_URI, KeyHelper.key))
-                        .openConnection();
-                JsonReader reader = new JsonReader(
-                        new InputStreamReader(connection.getInputStream()));
-                JsonParser parser = new JsonParser();
-                JsonElement jsonResponse = parser.parse(reader);
-                JAccount jAccount = new Gson().fromJson(jsonResponse, JAccount.class);
-
-                // Get World Info
-                connection = (HttpsURLConnection) new URL(APIHandles.BASE_API_WORLD_URI +
-                        "?ids=" + jAccount.world).openConnection();
-                reader = new JsonReader(
-                        new InputStreamReader(connection.getInputStream()));
-                parser = new JsonParser();
-                jsonResponse = parser.parse(reader);
-                ArrayList<JWorld> jWorlds = new Gson().fromJson(jsonResponse,
-                        new TypeToken<List<JWorld>>() {
-                        }.getType());
-
-                World world = new World(jWorlds.get(0).id, jWorlds.get(0).name);
-
-                /*
-                // Get Guild Info (Disabled for now)
-                String guildIDs = "";
-                for (String g : jAccount.guilds) {
-                    if (guildIDs.equals("")) guildIDs = g;
-                    else guildIDs += "," + g;
-                }
-                connection = (HttpsURLConnection) new URL(APIHandles.getAuthUriWithParams(
-                        APIHandles.BASE_API_GUILD_URI + "?ids=" + guildIDs, NavigationDrawerFragment.key))
-                        .openConnection();
-                reader = new JsonReader(
-                        new InputStreamReader(connection.getInputStream()));
-                parser = new JsonParser();
-                jsonResponse = parser.parse(reader);
-                ArrayList<JGuild> jGuilds = new Gson().fromJson(jsonResponse,
-                        new TypeToken<List<JGuild>>() {
-                        }.getType());
-
-                Guild[] guilds = new Guild[jGuilds.size()];
-                int i = 0;
-                for (JGuild jg : jGuilds) {
-                    guilds[i] = new Guild();
-                    i++;
-                }
-                */
-                Guild[] guilds = new Guild[1];
-                guilds[0] = new Guild();
-
-                Date date = Date.valueOf(jAccount.created.substring(0, jAccount.created.indexOf("T")));
-
-                MainActivity.mAcc = new Account(jAccount.id, jAccount.name, world,
-                        date, guilds);
-
-            } catch (IOException e) {
-                String t = "stub";
-            }
-            return null;
-        }
-
-        protected void onPostExecute(Void v) {
-            if (MainActivity.mAcc != null) {
-                tv_id.setText(MainActivity.mAcc.getId());
-                tv_name.setText(MainActivity.mAcc.getName());
-                tv_server.setText(MainActivity.mAcc.getWorld().getName());
-                tv_created.setText(MainActivity.mAcc.getCreated().toString());
-            }
-        }
-    }
-
     private View GetBankView(LayoutInflater inflater, ViewGroup container) {
+        MainActivity.mTabLayout.removeAllTabs();
+        MainActivity.mTabLayout.setVisibility(View.VISIBLE);
         View rootView = inflater.inflate(R.layout.fragment_bank, container, false);
+
         final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
 
         final RecyclerView rView = ((RecyclerView) rootView.findViewById(R.id.rv_container));
         rView.setLayoutManager(layoutManager);
 
-        if (MainActivity.toolbar != null) {
-            ArrayAdapter<String> sAdapter = new ArrayAdapter<String>(
-                    getActivity(),
-                    R.layout.spinner_dropdown,
-                    NavigationDrawerFragment.SUB_BANK);
-            MainActivity.spinner.setAdapter(sAdapter);
-            MainActivity.spinner.setVisibility(View.VISIBLE);
-            MainActivity.spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    switch(position) {
-                        case 0:
-                            BankAdapter rAdapter = new BankAdapter();
-                            rView.setAdapter(rAdapter);
-                            break;
-                        case 1:
-                            MatsAdapter mAdapter = new MatsAdapter();
-                            rView.setAdapter(mAdapter);
-                            break;
-                    }
+        final int[] mCurrentTab = new int[1];
+        MainActivity.mTabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                mCurrentTab[0] = tab.getPosition();
+                switch(tab.getPosition()) {
+                    case 0:
+                        BankAdapter rAdapter = new BankAdapter();
+                        rView.setAdapter(rAdapter);
+                        break;
+                    case 1:
+                        MatsAdapter mAdapter = new MatsAdapter();
+                        rView.setAdapter(mAdapter);
+                        break;
+                    default: break;
                 }
+            }
 
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
 
-                }
-            });
-        }
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+
+        TabLayout.Tab t1 = MainActivity.mTabLayout.newTab().setText("Personal");
+        TabLayout.Tab t2 = MainActivity.mTabLayout.newTab().setText("Materials");
+        MainActivity.mTabLayout.addTab(t1);
+        MainActivity.mTabLayout.addTab(t2);
+
+        rootView.setOnTouchListener(new OnSwipeTouchListener(getActivity()) {
+            @Override
+            public void onSwipeRight() {
+                if (mCurrentTab[0] > 0)
+                    MainActivity.mTabLayout.getTabAt(mCurrentTab[0] - 1).select();
+            }
+
+            @Override
+            public void onSwipeLeft() {
+                if (mCurrentTab[0] < MainActivity.mTabLayout.getTabCount() - 1)
+                    MainActivity.mTabLayout.getTabAt(mCurrentTab[0] + 1).select();
+            }
+        });
+
         return rootView;
     }
 

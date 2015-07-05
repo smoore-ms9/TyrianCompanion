@@ -13,14 +13,13 @@ public class BankItem {
 
     public int position;
 
-    public BankItem(int id, int count, int position){
+    public BankItem(int id, int count, int position) {
         this.id = id;
         this.count = count;
         this.position = position;
     }
 
-    public void setItem(Item i)
-    {
+    public void setItem(Item i) {
         this.item = i;
     }
 }

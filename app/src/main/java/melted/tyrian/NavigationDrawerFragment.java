@@ -2,21 +2,19 @@ package melted.tyrian;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.graphics.Color;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.Toolbar;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -29,15 +27,11 @@ import android.widget.ArrayAdapter;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.HashMap;
 
-import melted.tyrian.ANet.APIHandles;
-import melted.tyrian.ANet.JKey;
 import melted.tyrian.Helpers.KeyHelper;
 
 /**
@@ -47,77 +41,69 @@ import melted.tyrian.Helpers.KeyHelper;
  */
 public class NavigationDrawerFragment extends Fragment {
 
-    /**
-     * Remember the position of the selected item.
-     */
-    private static final String STATE_SELECTED_POSITION = "selected_navigation_drawer_position";
-
-    /**
-     * Per the design guidelines, you should show the drawer on launch until the user manually
-     * expands it. This shared preference tracks this.
-     */
-    private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
-
-    /**
-     * A pointer to the current callbacks instance (the Activity).
-     */
-    private NavigationDrawerCallbacks mCallbacks;
-
-    /**
-     * Helper component that ties the action bar to the navigation drawer.
-     */
-    private ActionBarDrawerToggle mDrawerToggle;
-
-    private DrawerLayout mDrawerLayout;
-    private ExpandableListView mDrawerListView;
-    public static Spinner mDrawerSpinner;
-    private View mFragmentContainerView;
-
-    private int mCurrentSelectedPosition = 0;
-    private boolean mFromSavedInstanceState;
-    private boolean mUserLearnedDrawer;
-
-    private Toolbar toolbar;
-
     protected static final String[] NAV_SECTIONS = {
             "Account",
             "PvE",
             "PvP",
             "WvW"
     };
-
     protected static final String[] SUB_ACCOUNT = {
             "Overview",
             "Bank",
             "Characters",
-            "Commerce",
-            "Guilds"
+            "Commerce"
+            //"Guilds" //NOT ACTIVE YET
     };
-
     protected static final String[] SUB_PVE = {
             "Boss Timer"
     };
-
     protected static final String[] SUB_PVP = {
             "Map Viewer"
     };
-
     protected static final String[] SUB_WVW = {
             "Matches"
     };
-
     protected static final String[] SUB_BANK = {
             "Personal",
             "Materials"
     };
+    protected static final HashMap<String, String[]> NAV_NODES = new HashMap<String, String[]>() {
+        {
+            {
+                put(NAV_SECTIONS[0], SUB_ACCOUNT);
+                put(NAV_SECTIONS[1], SUB_PVE);
+                put(NAV_SECTIONS[2], SUB_PVP);
+                put(NAV_SECTIONS[3], SUB_WVW);
+            }
+        }
 
-    protected static final HashMap<String, String[]> NAV_NODES = new HashMap<String, String[]>(){
-        {{  put(NAV_SECTIONS[0], SUB_ACCOUNT);
-            put(NAV_SECTIONS[1], SUB_PVE);
-            put(NAV_SECTIONS[2], SUB_PVP);
-            put(NAV_SECTIONS[3], SUB_WVW); }};
+        ;
     };
-
+    /**
+     * Remember the position of the selected item.
+     */
+    private static final String STATE_SELECTED_POSITION = "selected_navigation_drawer_position";
+    /**
+     * Per the design guidelines, you should show the drawer on launch until the user manually
+     * expands it. This shared preference tracks this.
+     */
+    private static final String PREF_USER_LEARNED_DRAWER = "navigation_drawer_learned";
+    public static Spinner mDrawerSpinner;
+    /**
+     * A pointer to the current callbacks instance (the Activity).
+     */
+    private NavigationDrawerCallbacks mCallbacks;
+    /**
+     * Helper component that ties the action bar to the navigation drawer.
+     */
+    private ActionBarDrawerToggle mDrawerToggle;
+    private DrawerLayout mDrawerLayout;
+    private ExpandableListView mDrawerListView;
+    private View mFragmentContainerView;
+    private int mCurrentSelectedPosition = 0;
+    private boolean mFromSavedInstanceState;
+    private boolean mUserLearnedDrawer;
+    private Toolbar toolbar;
     private String[] keys;
 
     public NavigationDrawerFragment() {
@@ -203,7 +189,7 @@ public class NavigationDrawerFragment extends Fragment {
 
             @Override
             public long getChildId(int groupPosition, int childPosition) {
-                return (groupPosition*100) + childPosition;
+                return (groupPosition * 100) + childPosition;
             }
 
             @Override

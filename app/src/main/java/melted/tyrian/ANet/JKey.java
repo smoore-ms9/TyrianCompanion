@@ -13,7 +13,8 @@ public class JKey {
     @SerializedName("name")
     public String name;
 
-    public JKey() {}
+    public JKey() {
+    }
 
     public JKey(String key, String name) {
         this.key = key;

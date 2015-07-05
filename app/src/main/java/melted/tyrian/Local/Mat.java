@@ -5,12 +5,29 @@ package melted.tyrian.Local;
  */
 public class Mat implements Comparable<Mat> {
 
+    private final int id;
+    private Item item;
+    private int count;
+    private int category;
+    private int position;
+
+    public Mat(int id, int count, int category, int position) {
+        this.id = id;
+        this.count = count;
+        this.category = category;
+        this.position = position;
+    }
+
     public int getId() {
         return id;
     }
 
     public Item getItem() {
         return item;
+    }
+
+    public void setItem(Item i) {
+        this.item = i;
     }
 
     public int getCount() {
@@ -29,32 +46,12 @@ public class Mat implements Comparable<Mat> {
         this.category = category;
     }
 
-    private final int id;
-    private Item item;
-    private int count;
-    private int category;
-
     public int getPosition() {
         return position;
     }
 
     public void setPosition(int position) {
         this.position = position;
-    }
-
-    private int position;
-
-    public Mat(int id, int count, int category, int position)
-    {
-        this.id = id;
-        this.count = count;
-        this.category = category;
-        this.position = position;
-    }
-
-    public void setItem(Item i)
-    {
-        this.item = i;
     }
 
     @Override

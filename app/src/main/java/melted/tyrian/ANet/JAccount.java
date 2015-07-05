@@ -22,5 +22,6 @@ public class JAccount {
     @SerializedName("created")
     public String created;
 
-    public JAccount() {}
+    public JAccount() {
+    }
 }

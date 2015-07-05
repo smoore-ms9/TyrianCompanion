@@ -18,7 +18,6 @@ import android.widget.TextView;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
 import java.io.IOException;
@@ -27,19 +26,16 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import melted.tyrian.ANet.APIHandles;
-import melted.tyrian.Helpers.KeyHelper;
+import melted.tyrian.ANet.APIHandler;
+import melted.tyrian.ANet.JItem;
+import melted.tyrian.Async.GetBank;
 import melted.tyrian.Local.BankItem;
 import melted.tyrian.Local.Item;
-import melted.tyrian.ANet.JBankItem;
-import melted.tyrian.ANet.JItem;
 import melted.tyrian.MainActivity;
-import melted.tyrian.NavigationDrawerFragment;
 import melted.tyrian.R;
 
 /**
@@ -49,8 +45,8 @@ import melted.tyrian.R;
 
 public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder> {
 
-    private boolean loading;
-    private int index;
+    public boolean loading;
+    public int index;
     private int cardNum;
 
     // Provide a suitable constructor (depends on the kind of dataset)
@@ -60,63 +56,41 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
         this.cardNum = 0;
     }
 
-    private class PopulateBItems extends AsyncTask<Void, Void, Void>
-    {
-        private final BankAdapter adapter;
+    // Create new views (invoked by the layout manager)
+    @Override
+    public BankViewHolder onCreateViewHolder(ViewGroup parent,
+                                                         int viewType) {
+        // create a new view
+        CardView card = (CardView) LayoutInflater.
+                from(parent.getContext()).
+                inflate(R.layout.card_banktab, parent, false);
 
-        public PopulateBItems(BankAdapter adapter) {
-            this.adapter = adapter;
-        }
+        if ((MainActivity.bItems.size() == 0 && !loading) ||
+                (MainActivity.bItems.size() > 0 && !MainActivity.bCached))
+            new GetBank(this).execute();
 
-        @Override
-        protected Void doInBackground(Void... params) {
-            loading = true;
-            MainActivity.bCached = false;
-            index = 0;
-            HttpsURLConnection connection;
-            try {
-                connection = (HttpsURLConnection) new URL(APIHandles.getAuthUri(
-                        APIHandles.BASE_API_BANK_URI, KeyHelper.key))
-                        .openConnection();
+        // set the view's size, margins, paddings and layout parameters...
+        BankViewHolder vh = new BankViewHolder(card, cardNum);
+        cardNum++;
+        return vh;
+    }
 
-                // fetch data from server
-                JsonReader reader = new JsonReader(
-                        new InputStreamReader(connection.getInputStream()));
-                JsonParser parser = new JsonParser();
-                JsonElement jsonResponse = parser.parse(reader);
-                ArrayList<JBankItem> jbItems = new Gson().fromJson(jsonResponse,
-                        new TypeToken<List<JBankItem>>() {
-                        }.getType());
-                BankItem[] _bItems = new BankItem[30];
-                MainActivity.bItems = new ArrayList<>();
-                MainActivity.bItems.add(_bItems);
-                int i = 0;
-                for (JBankItem _j : jbItems) {
-                    BankItem _b;
-                    if (_j != null) {
-                        _b = new BankItem(_j.id, _j.count, i);
-                    } else {
-                        _b = new BankItem(0, 0, i);
-                    }
-                    if (i >= 30) {
-                        _bItems = new BankItem[30];
-                        MainActivity.bItems.add(_bItems);
-                        i = 0;
-                    }
-                    _bItems[i] = _b;
-                    i++;
-                }
-                MainActivity.bCached = true;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
+    // Replace the contents of a view (invoked by the layout manager)
+    @Override
+    public void onBindViewHolder(BankViewHolder holder, int position) {
+        // - get element from your dataset at this position
+        // - replace the contents of the view with that element
+        if (MainActivity.bItems.size() == 0) holder.mTitle.setText("Loading...");
+        else if (MainActivity.bItems.get(position) != null)
+            holder.mTitle.setText("Bank Tab " + Integer.toString(position + 1));
+        else holder.mTitle.setText("Loading...");
+    }
 
-        protected void onPostExecute(Void v) {
-            loading = false;
-            adapter.notifyDataSetChanged();
-        }
+    // Return the size of your dataset (invoked by the layout manager)
+    @Override
+    public int getItemCount() {
+        if (MainActivity.bItems.size() > 0) return MainActivity.bItems.size();
+        return 1;
     }
 
     // Provide a reference to the views for each data item
@@ -133,42 +107,6 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
             mGrid = (GridView) cv.findViewById(R.id.gv_grid);
             mGrid.setAdapter(new BankItemAdapter(cv.getContext(), cardNum));
         }
-    }
-
-    // Create new views (invoked by the layout manager)
-    @Override
-    public BankAdapter.BankViewHolder onCreateViewHolder(ViewGroup parent,
-                                                         int viewType) {
-        // create a new view
-        CardView card = (CardView) LayoutInflater.
-                from(parent.getContext()).
-                inflate(R.layout.card_banktab, parent, false);
-
-        if ((MainActivity.bItems.size() == 0 && !loading) ||
-                (MainActivity.bItems.size() > 0 && !MainActivity.bCached))
-            new PopulateBItems(this).execute();
-
-        // set the view's size, margins, paddings and layout parameters...
-        BankViewHolder vh = new BankViewHolder(card, cardNum);
-        cardNum++;
-        return vh;
-    }
-
-    // Replace the contents of a view (invoked by the layout manager)
-    @Override
-    public void onBindViewHolder(BankViewHolder holder, int position) {
-        // - get element from your dataset at this position
-        // - replace the contents of the view with that element
-        if (MainActivity.bItems.size() == 0) holder.mTitle.setText("Loading...");
-        else if (MainActivity.bItems.get(position) != null)
-            holder.mTitle.setText("Bank Tab " + Integer.toString(position + 1));
-    }
-
-    // Return the size of your dataset (invoked by the layout manager)
-    @Override
-    public int getItemCount() {
-        if (MainActivity.bItems.size() > 0) return MainActivity.bItems.size();
-        return 1;
     }
 
     public class BankItemAdapter extends BaseAdapter {
@@ -228,7 +166,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
 
             ImageView imageView = (ImageView) _view.findViewById(R.id.iv_item);
             imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-            imageView.setPadding(8, 8, 8, 8);
+            imageView.setPadding(5, 5, 5, 5);
 
             TextView tView = (TextView) _view.findViewById(R.id.tv_label);
 
@@ -252,7 +190,9 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
 
                 if (tItems != null) {
                     BankItem b = tItems[position];
-                    tView.setText(Integer.toString(b.count));
+                    if (b.count > 0)
+                        tView.setText(Integer.toString(b.count));
+                    else tView.setText("");
                 }
 
                 imageView.setImageDrawable(MainActivity.bThumbnails.get(itemNum).getDrawable());
@@ -260,8 +200,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
             }
         }
 
-        private class ItemFetcher extends AsyncTask<ArrayList<Integer>, Void, ArrayList<Item>>
-        {
+        private class ItemFetcher extends AsyncTask<ArrayList<Integer>, Void, ArrayList<Item>> {
             private final BankItemAdapter ADAPTER;
             private final HashMap<Integer, ImageView> IV_MAP;
             private final HashMap<ImageView, Bitmap> ICON_MAP;
@@ -280,7 +219,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
                 }
             }
 
-            private void FetchItem () throws IOException {
+            private void FetchItem() throws IOException {
                 String queryIDs = "";
                 for (int id : IDS) {
                     if (queryIDs.equals(""))
@@ -290,7 +229,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
                 }
 
                 HttpsURLConnection connection =
-                        (HttpsURLConnection) new URL(APIHandles.BASE_API_ITEMS_URI
+                        (HttpsURLConnection) new URL(APIHandler.BASE_API_ITEMS_URI
                                 + "?ids=" + queryIDs
                                 + "&lang=" + Locale.getDefault().getLanguage())
                                 .openConnection();
@@ -338,7 +277,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
             }
 
             @Override
-            protected ArrayList<Item> doInBackground (ArrayList<Integer>... params){
+            protected ArrayList<Item> doInBackground(ArrayList<Integer>... params) {
                 ArrayList<Item> _items = new ArrayList<>();
                 try {
                     FetchItem();
@@ -348,6 +287,7 @@ public class BankAdapter extends RecyclerView.Adapter<BankAdapter.BankViewHolder
                 }
                 return _items;
             }
+
             protected void onPostExecute(ArrayList<Item> _items) {
                 for (ImageView iv : ICON_MAP.keySet()) {
                     iv.setImageBitmap(ICON_MAP.get(iv));

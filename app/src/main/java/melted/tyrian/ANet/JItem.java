@@ -1,7 +1,5 @@
 package melted.tyrian.ANet;
 
-import android.net.Uri;
-
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -34,5 +32,6 @@ public class JItem {
     //@SerializedName("details")
     //public String[] details;
 
-    public JItem() {}
+    public JItem() {
+    }
 }

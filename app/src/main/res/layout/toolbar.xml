@@ -11,11 +11,37 @@
     android:elevation="@dimen/navigation_elevation"
     style="@style/Toolbar">
 
-    <Spinner
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tyrian Companion"
+            android:layout_gravity="center_vertical|left"
+            android:id="@+id/tool_title"
+            android:textAppearance="@style/ToolBarTitle"
+            android:layout_marginRight="5dp"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="none">
+            <android.support.design.widget.TabLayout
+                android:layout_width="wrap_content" android:layout_height="?attr/actionBarSize"
+                android:id="@+id/tool_tablayout"
+                android:fillViewport="false"
+                style="@style/Widget.Design.TabLayout">
+
+            </android.support.design.widget.TabLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+    <!--Spinner
         android:id="@+id/tool_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:spinnerMode="dropdown"
-        style="@style/Base.Widget.AppCompat.Spinner"/>
+        style="@style/Base.Widget.AppCompat.Spinner"/!-->
 
 </android.support.v7.widget.Toolbar>

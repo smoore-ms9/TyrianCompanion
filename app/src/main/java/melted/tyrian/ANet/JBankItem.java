@@ -13,5 +13,6 @@ public class JBankItem {
     @SerializedName("count")
     public int count;
 
-    public JBankItem() {}
+    public JBankItem() {
+    }
 }
