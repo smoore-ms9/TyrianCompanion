@@ -1,5 +1,8 @@
 package melted.tyrian.Local;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 import melted.tyrian.ANet.JCharacter;
 
 /**
@@ -25,11 +28,19 @@ public class LCharacter {
 
     private int deaths;
 
-    private Equipment[] equipment;
+    private ArrayList<Equipment> equipment;
 
     private Bag[] bags;
 
-    public LCharacter() {}
+    public boolean eCached;
+    public boolean uCached;
+    public boolean iCached;
+
+    public LCharacter() {
+        eCached = false;
+        uCached = false;
+        iCached = false;
+    }
 
     public String getName() {
         return name;
@@ -103,11 +114,11 @@ public class LCharacter {
         this.deaths = deaths;
     }
 
-    public Equipment[] getEquipment() {
+    public ArrayList<Equipment> getEquipment() {
         return equipment;
     }
 
-    public void setEquipment(Equipment[] equipment) {
+    public void setEquipment(ArrayList<Equipment> equipment) {
         this.equipment = equipment;
     }
 

@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.util.TypedValue;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 import melted.tyrian.ANet.JBag;
 import melted.tyrian.ANet.JCharacter;
 import melted.tyrian.ANet.JEquipment;
@@ -37,11 +40,12 @@ public class ConversionHelper {
         }
         c.setBags(bags);
 
-        Equipment[] eq = new Equipment[jc.equipment.length];
+        ArrayList<Equipment> el = new ArrayList<>();
         for (int i = 0; i < jc.equipment.length; i++) {
             JEquipment je = jc.equipment[i];
-            Equipment e = new Equipment(je.id, je.infusions, je.skin, je.slot, je.upgrades);
+            el.add(new Equipment(je.id, je.slot, je.upgrades, je.infusions));
         }
+        c.setEquipment(el);
         return c;
     }
 }

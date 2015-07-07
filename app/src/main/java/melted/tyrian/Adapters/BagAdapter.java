@@ -26,12 +26,14 @@ public class BagAdapter extends BaseAdapter {
 
     private final int mSlot;
 
-    public BagAdapter(int slot, TextView bName) {
+    public BagAdapter(int slot, TextView bName, Context c) {
         this.mSlot = slot;
-        if (MainActivity.mSelCharacter.getBags()[mSlot].inventory == null) {
+        Bag b = MainActivity.mSelCharacter.getBags()[mSlot];
+        if (b.inventory == null) {
             bName.setText("Loading...");
-            new GetBag(this, mSlot, bName).execute();
-        } else bName.setText("Bag " + Integer.toString(mSlot)); //TODO: Get bag name
+            new GetBag(this, mSlot, bName, c).execute();
+        } else if (b != null && b.bagItem != null) bName.setText(b.bagItem.getName());
+        else bName.setText("Bag " + Integer.toString(mSlot + 1));
     }
 
     @Override
@@ -71,7 +73,7 @@ public class BagAdapter extends BaseAdapter {
 
         ImageView imageView = (ImageView) _view.findViewById(R.id.iv_item);
         imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageView.setPadding(5, 5, 5, 5);
+        imageView.setPadding(1, 1, 1, 1);
         imageView.setImageResource(R.drawable.empty_slot);
 
         TextView tView = (TextView) _view.findViewById(R.id.tv_label);

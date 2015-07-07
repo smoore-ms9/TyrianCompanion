@@ -67,7 +67,7 @@ public class CharacterListAdapter extends RecyclerView.Adapter<CharacterListAdap
     public void onBindViewHolder(CharacterViewHolder holder, int position) {
         LCharacter lc = MainActivity.mCharacters.get(position);
         holder.mNameView.setText(lc.getName() + " (" + lc.getLevel() + ")");
-        holder.mDetailView.setText(lc.getGender() + " " + lc.getRace() + " " + lc.getProfession());
+        //holder.mDetailView.setText(lc.getGender() + " " + lc.getRace() + " " + lc.getProfession());
         holder.mCardView.findViewById(R.id.rl_char).setBackgroundResource(PROF_BGS.get(lc.getProfession()));
         holder.mCharacter = lc;
     }

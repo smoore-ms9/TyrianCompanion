@@ -1,99 +1,90 @@
 package melted.tyrian.Async;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import melted.tyrian.ANet.APIHandler;
-import melted.tyrian.ANet.JBankItem;
+import melted.tyrian.ANet.JEquipment;
 import melted.tyrian.ANet.JInventory;
 import melted.tyrian.ANet.JItem;
-import melted.tyrian.ANet.JMat;
-import melted.tyrian.Adapters.BagAdapter;
-import melted.tyrian.Adapters.BankAdapter;
-import melted.tyrian.Helpers.KeyHelper;
 import melted.tyrian.Local.Bag;
-import melted.tyrian.Local.BankItem;
+import melted.tyrian.Local.Equipment;
 import melted.tyrian.Local.Item;
-import melted.tyrian.Local.Mat;
 import melted.tyrian.MainActivity;
 import melted.tyrian.R;
 
 /**
- * Created by Stephen on 7/4/2015.
+ * Created by Stephen on 7/6/2015.
  */
-public class GetBag extends AsyncTask<Void, Void, Void> {
+public class GetEquipment extends AsyncTask<Void, Void, Void> {
 
-    private final BagAdapter mAdapter;
-    private final int mSlot;
+    private final HashMap<String, ImageView> mViews;
     private final Context mContext;
-    private TextView tvName;
-    private HashMap<Integer, Integer> mIdMap;
+    private HashMap<Integer, Equipment> mIdMap;
     private HashMap<Integer, Integer> mPosMap;
 
-    public GetBag(BagAdapter a, int slot, TextView tvName, Context c) {
-        this.mAdapter = a;
-        this.mSlot = slot;
-        this.tvName = tvName;
+    public GetEquipment(HashMap<String, ImageView> views, Context c) {
+        this.mViews = views;
         this.mIdMap = new HashMap<>();
         this.mPosMap = new HashMap<>();
         this.mContext = c;
-        Bag b = MainActivity.mSelCharacter.getBags()[mSlot];
-        b.inventory = new Item[b.getSize()];
+        MainActivity.mSelCharacter.eCached = false;
     }
     @Override
     protected Void doInBackground(Void... params) {
 
         try {
-            Bag b = MainActivity.mSelCharacter.getBags()[mSlot];
-            String queryIDs = Integer.toString(b.getId());
-            this.mIdMap.put(b.getId(), 1);
+            String queryIDs = "";
             int i = 0;
-            for (JInventory ji : b.getjInventory()) {
-                if (ji != null) {
+            for (Equipment e : MainActivity.mSelCharacter.getEquipment()) {
+                if (e != null) {
                     if (queryIDs.equals(""))
-                        queryIDs = Integer.toString(ji.id);
+                        queryIDs = Integer.toString(e.id);
                     else
-                        queryIDs += "," + Integer.toString(ji.id);
-                    this.mIdMap.put(ji.id, ji.count);
-                    this.mPosMap.put(ji.id, i);
+                        queryIDs += "," + Integer.toString(e.id);
+                    this.mIdMap.put(e.id, e);
+                    this.mPosMap.put(e.id, i);
                 }
                 i++;
             }
 
             HttpURLConnection connection =
-                (HttpsURLConnection) new URL(APIHandler.BASE_API_ITEMS_URI
-                        + "?ids=" + queryIDs
-                        + "&lang=" + Locale.getDefault().getLanguage())
-                        .openConnection();
+                    (HttpsURLConnection) new URL(APIHandler.BASE_API_ITEMS_URI
+                            + "?ids=" + queryIDs
+                            + "&lang=" + Locale.getDefault().getLanguage())
+                            .openConnection();
             JsonReader reader = new JsonReader(
                     new InputStreamReader(connection.getInputStream()));
             JsonParser parser = new JsonParser();
             JsonElement jsonResponse = parser.parse(reader);
             JItem[] items = new Gson().fromJson(jsonResponse, JItem[].class);
+            HashMap<Integer, Item> mItems = new HashMap<>();
 
-            for (JItem ji : items) {
+            for (int _i = 0; _i < items.length; _i++) {
                 try {
+                    JItem ji = items[_i];
                     if (ji != null) {
                         Item _item = new Item(ji.ID);
                         _item.setName(ji.name);
@@ -102,24 +93,20 @@ public class GetBag extends AsyncTask<Void, Void, Void> {
                         _item.setLevel(ji.level);
                         _item.setRarity(ji.rarity);
                         _item.setVendor_value(ji.vendor_value);
-                        try {
-                            InputStream in = new URL(ji.icon).openStream();
-                            _item.setIcon(BitmapFactory.decodeStream(in));
-                        } catch (FileNotFoundException e) {
-                            _item.setIcon(BitmapFactory.decodeResource(mContext.getResources(),
-                                    R.drawable.empty_slot));
-                        }
                         //_item.game_types = item.game_types;
                         //_item.flags = item.flags;
                         //_item.restrictions = item.restrictions;
                         //_item.details = item.details;
-                        _item.setCount(mIdMap.get(ji.ID));
-
-                        if (_item.getID() == b.getId()) {
-                            MainActivity.mSelCharacter.getBags()[mSlot].bagItem = _item;
-                        } else
-                            MainActivity.mSelCharacter.getBags()[mSlot]
-                                    .inventory[mPosMap.get(ji.ID)] = _item;
+                        _item.setCount(1);
+                        try {
+                            InputStream in = new URL(ji.icon).openStream();
+                            _item.setIcon(BitmapFactory.decodeStream(in));
+                            in.close();
+                        } catch (FileNotFoundException e) {
+                            _item.setIcon(BitmapFactory.decodeResource(mContext.getResources(),
+                                    R.drawable.empty_slot));
+                        }
+                        mItems.put(_item.getID(), _item);
                     }
                 } catch (Exception e) {
                     String t = e.getMessage();
@@ -127,7 +114,10 @@ public class GetBag extends AsyncTask<Void, Void, Void> {
                     //offset++;
                 }
             }
-
+            for (Equipment _e : MainActivity.mSelCharacter.getEquipment()) {
+                _e.item = mItems.get(_e.id);
+            }
+            MainActivity.mSelCharacter.eCached = true;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -135,9 +125,17 @@ public class GetBag extends AsyncTask<Void, Void, Void> {
     }
 
     protected void onPostExecute(Void v) {
-        if (MainActivity.mSelCharacter.getBags()[mSlot].bagItem != null)
-            tvName.setText(MainActivity.mSelCharacter.getBags()[mSlot].bagItem.getName());
-        else tvName.setText("Bag " + Integer.toString(mSlot + 1));
-        mAdapter.notifyDataSetChanged();
+        for (Equipment e : MainActivity.mSelCharacter.getEquipment()) {
+            if (e != null && e.item != null) {
+                if (this.mViews.containsKey(e.slot))
+                    this.mViews.get(e.slot).setImageBitmap(e.item.getIcon());
+                if (e.isTwoHanded()) {
+                    if (e.slot.contains("A1"))
+                        this.mViews.get(e.slot.replace("A1", "A2")).setImageBitmap(e.item.getIcon());
+                    else if (e.slot.contains("B1"))
+                        this.mViews.get(e.slot.replace("B1", "B2")).setImageBitmap(e.item.getIcon());
+                }
+            }
+        }
     }
 }
